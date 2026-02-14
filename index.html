@@ -2,48 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TF2 Datamap Explorer (Property Search)</title>
+    <title>TF2 Datamap Explorer (GitHub Hosted)</title>
     <style>
+        /* [Styles remain the same as previous version] */
         :root { --bg: #1e1e1e; --sidebar: #252526; --text: #cccccc; --accent: #007acc; --border: #333; --header: #333333; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; }
         header { background-color: var(--header); padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid var(--border); }
         .container { display: flex; flex: 1; overflow: hidden; }
-        
-        /* Sidebar */
-        #sidebar { width: 340px; background-color: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        #search-box { padding: 10px; background: #2d2d2d; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--border); }
+        #sidebar { width: 320px; background-color: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        #search-box { padding: 10px; background: #2d2d2d; display: flex; flex-direction: column; gap: 8px; }
         input, select { width: 100%; padding: 8px; box-sizing: border-box; background: #3c3c3c; border: 1px solid var(--border); color: white; border-radius: 4px; }
-        input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
-        
         #class-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
         #class-list li { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid var(--border); }
         #class-list li:hover { background: #2a2d2e; }
         #class-list li.active { background: var(--accent); color: white; }
-        
-        /* Content Area */
-        #main-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
-        .property-filter-container { position: sticky; top: -20px; background: var(--bg); padding: 10px 0; z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; }
-        th { background: #2d2d2d; }
-        
-        .flag-pill { display: inline-block; padding: 2px 6px; margin-right: 4px; border-radius: 3px; font-size: 0.75em; background: #444; color: #eee; }
+        #main-content { flex: 1; padding: 20px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+        .flag-pill { display: inline-block; padding: 2px 6px; margin-right: 4px; border-radius: 3px; font-size: 0.75em; background: #444; }
         .hidden { display: none; }
-        .prop-name { color: #dcdcaa; font-weight: bold; }
-        .offset { color: #569cd6; font-family: monospace; }
-        #status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; background: #444; }
-        .btn-upload { background: var(--accent); color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; border: none; }
-        .subclass-header { background:#333; padding:8px; margin:20px 0 5px 0; border-left: 4px solid var(--accent); }
     </style>
 </head>
 <body>
 
 <header>
-    <div id="status-pill">Status: Initializing...</div>
-    <div id="manual-zone" class="hidden">
-        <label class="btn-upload">Select datamaps.txt manually <input type="file" id="local-picker" class="hidden" accept=".txt"></label>
-    </div>
+    <div id="file-status">⏳ Fetching datamaps.txt from GitHub...</div>
     <div style="margin-left: auto; display: flex; gap: 15px; align-items: center;">
         <select id="flag-filter" style="width: auto;">
             <option value="">All Flags</option>
@@ -58,23 +41,15 @@
 <div class="container">
     <div id="sidebar">
         <div id="search-box">
-            <input type="text" id="class-search" placeholder="Filter Classes (e.g. CBaseEntity)">
-            <input type="text" id="classname-search" placeholder="Filter Classnames (e.g. _plasma)">
+            <input type="text" id="class-search" placeholder="Search Class (e.g. CBaseEntity)">
+            <input type="text" id="classname-search" placeholder="Search Classname (e.g. _plasma)">
         </div>
         <ul id="class-list"></ul>
     </div>
     <div id="main-content">
-        <div id="welcome-screen">
-            <h2>TF2 Datamap Explorer</h2>
-            <p>Load your datamaps file to begin. If working locally, use the "Select manually" button.</p>
-        </div>
-
         <div id="viewer-ui" class="hidden">
-            <div class="property-filter-container">
-                <input type="text" id="prop-search" placeholder="Filter properties in this class (e.g. m_iHealth or health)...">
-            </div>
-            <h1 id="selected-class-name" style="margin-top:0;">Class Name</h1>
-            <p id="selected-class-internal" style="opacity: 0.6; font-family: monospace; margin-bottom:20px;"></p>
+            <h1 id="selected-class-name">Select a Class</h1>
+            <p id="selected-class-internal" style="opacity: 0.6;"></p>
             <div id="tables-container"></div>
         </div>
     </div>
@@ -82,37 +57,27 @@
 
 <script>
     let masterData = [];
-    let currentSelectedClass = null;
 
-    // --- 1. DATA LOADING & PARSING ---
-    async function init() {
-        const status = document.getElementById('status-pill');
+    // --- AUTOMATIC FETCH FOR GITHUB PAGES ---
+    async function loadData() {
+        const statusEl = document.getElementById('file-status');
         try {
-            const response = await fetch('./datamaps.txt');
-            if (!response.ok) throw new Error();
+            // Append a timestamp to bypass GitHub Pages caching
+            const response = await fetch('./datamaps.txt?t=' + new Date().getTime());
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            
             const text = await response.text();
-            processRawData(text);
-            status.innerText = "Status: Auto-loaded datamaps.txt";
-            status.style.background = "#28a745";
-        } catch (e) {
-            status.innerText = "Status: Awaiting manual file selection...";
-            status.style.background = "#d9534f";
-            document.getElementById('manual-zone').classList.remove('hidden');
+            masterData = parseDataMap(text);
+            
+            statusEl.innerText = `✅ Loaded ${masterData.length} classes`;
+            document.getElementById('viewer-ui').classList.remove('hidden');
+            renderClassList();
+        } catch (err) {
+            statusEl.innerHTML = `<span style="color:red">❌ Failed to load datamaps.txt: ${err.message}</span>`;
         }
     }
 
-    document.getElementById('local-picker').addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            processRawData(ev.target.result);
-            document.getElementById('status-pill').innerText = "Status: Loaded Manual File";
-            document.getElementById('manual-zone').classList.add('hidden');
-        };
-        reader.readAsText(file);
-    });
-
+    // --- PARSER (Supports Classnames & Sub-Tables) ---
     function parseDataMap(text) {
         const lines = text.split(/\r?\n/);
         const classes = [];
@@ -120,8 +85,11 @@
         let currentSubTable = null;
 
         lines.forEach(line => {
+            // Match Class Header 
             const classMatch = line.match(/^([A-Za-z0-9_]+)\s+-\s+([A-Za-z0-9_]+)/);
+            // Match Sub-Class Table [cite: 1, 11]
             const subTableMatch = line.match(/^\s+Sub-Class Table \((\d+) Deep\):\s+([A-Za-z0-9_]+)\s+-\s+([A-Za-z0-9_]+)/);
+            // Match Fields 
             const fieldMatch = line.match(/^\s*-\s+([A-Za-z0-9_]+)\s+\(Offset\s+(\d+)\)\s+\(([^)]+)\)\(([^)]+)\)(?:\s+-\s+(.+))?$/);
 
             if (classMatch && !line.includes('Sub-Class Table')) {
@@ -139,14 +107,7 @@
         return classes;
     }
 
-    function processRawData(text) {
-        masterData = parseDataMap(text);
-        document.getElementById('welcome-screen').classList.add('hidden');
-        document.getElementById('viewer-ui').classList.remove('hidden');
-        renderClassList();
-    }
-
-    // --- 2. RENDERING LOGIC ---
+    // --- UI LOGIC ---
     function renderClassList() {
         const qC = document.getElementById('class-search').value.toLowerCase();
         const qI = document.getElementById('classname-search').value.toLowerCase();
@@ -160,69 +121,37 @@
         `).join('');
     }
 
-    window.selectClass = (name, internal) => {
+    function selectClass(name, internal) {
         const cls = masterData.find(c => c.name === name && c.internal === internal);
         if (!cls) return;
-        currentSelectedClass = cls;
-
-        document.querySelectorAll('#class-list li').forEach(li => {
-            const isMatch = li.children[0].innerText === name && li.children[1].innerText === internal;
-            li.classList.toggle('active', isMatch);
-        });
 
         document.getElementById('selected-class-name').innerText = cls.name;
         document.getElementById('selected-class-internal').innerText = `Engine Classname: ${cls.internal}`;
         
-        renderTablesWithFilters();
-    };
-
-    function renderTablesWithFilters() {
-        if (!currentSelectedClass) return;
-        const cls = currentSelectedClass;
-        const propQuery = document.getElementById('prop-search').value.toLowerCase();
-        const flagQuery = document.getElementById('flag-filter').value;
-
         const container = document.getElementById('tables-container');
-        container.innerHTML = `<h3>Base Properties</h3>` + renderTable(cls.fields, propQuery, flagQuery);
+        container.innerHTML = '<h3>Base Fields</h3>' + renderTable(cls.fields);
         
         cls.subTables.forEach(sub => {
-            const tableHtml = renderTable(sub.fields, propQuery, flagQuery);
-            if (tableHtml.includes('<tr>')) { // Only show sub-table if it has matching rows
-                container.innerHTML += `<div class="subclass-header">Sub-Class Table: ${sub.prop} (${sub.className})</div>`;
-                container.innerHTML += tableHtml;
-            }
+            container.innerHTML += `<div style="background:#333; padding:5px; margin:10px 0;">Sub-Class: ${sub.prop} (${sub.className})</div>`;
+            container.innerHTML += renderTable(sub.fields);
         });
     }
 
-    function renderTable(fields, propQuery, flagQuery) {
-        const filtered = fields.filter(f => {
-            const matchesProp = f.name.toLowerCase().includes(propQuery) || f.key.toLowerCase().includes(propQuery);
-            const matchesFlag = flagQuery === "" || f.flags.includes(flagQuery);
-            return matchesProp && matchesFlag;
-        });
+    function renderTable(fields) {
+        const filter = document.getElementById('flag-filter').value;
+        const filtered = filter ? fields.filter(f => f.flags.includes(filter)) : fields;
+        if (filtered.length === 0) return "<p>No matches for selected flag.</p>";
 
-        if (filtered.length === 0) return "<p style='opacity:0.5; padding-left:10px;'>No properties match filters.</p>";
-
-        return `<table>
-            <thead><tr><th style="width:30%">Property</th><th style="width:10%">Offset</th><th style="width:10%">Size</th><th style="width:25%">Flags</th><th style="width:25%">NetProp/Key</th></tr></thead>
-            <tbody>` + 
-            filtered.map(f => `<tr>
-                <td class="prop-name" title="${f.name}">${f.name}</td>
-                <td class="offset">${f.offset}</td>
-                <td>${f.size}</td>
-                <td>${f.flags.map(fl => `<span class="flag-pill">${fl}</span>`).join('')}</td>
-                <td style="color:#ce9178" title="${f.key}">${f.key}</td>
-            </tr>`).join('') + 
+        return `<table><thead><tr><th>Property</th><th>Offset</th><th>Flags</th><th>Key</th></tr></thead><tbody>` + 
+            filtered.map(f => `<tr><td>${f.name}</td><td>${f.offset}</td><td>${f.flags.map(fl => `<span class="flag-pill">${fl}</span>`).join('')}</td><td>${f.key}</td></tr>`).join('') + 
             `</tbody></table>`;
     }
 
-    // --- 3. EVENT LISTENERS ---
     document.getElementById('class-search').addEventListener('input', renderClassList);
     document.getElementById('classname-search').addEventListener('input', renderClassList);
-    document.getElementById('flag-filter').addEventListener('change', renderTablesWithFilters);
-    document.getElementById('prop-search').addEventListener('input', renderTablesWithFilters);
+    document.getElementById('flag-filter').addEventListener('change', renderClassList);
 
-    init();
+    loadData();
 </script>
 </body>
 </html>
