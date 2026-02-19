@@ -1,6 +1,6 @@
 /*
 ================================================================================
-  UNIFIED VIEWCONTROL SCRIPT — DEVELOPER GUIDE
+  UNIFIED VIEWCONTROL SCRIPT - DEVELOPER GUIDE
   Based on Easy PVC Control by worMatty | Refactored by SpookyToad
 ================================================================================
 
@@ -9,8 +9,8 @@
   Manages point_viewcontrol camera entities in TF2 VScript.
   Provides two independent systems that can be used separately or together:
 
-    [A] SHARED CAMERA     — one entity shown to all (or one) players.
-    [B] PER-PLAYER CAMERA — a separate camera spawned for each player,
+    [A] SHARED CAMERA     - one entity shown to all (or one) players.
+    [B] PER-PLAYER CAMERA - a separate camera spawned for each player,
                             so every player sees their own view simultaneously.
                             Supports path_corner-based cinematic movement.
 
@@ -28,7 +28,7 @@
   3. Call the matching Disable/Destroy function to deactivate it.
 
 ================================================================================
-  QUICK REFERENCE — WHICH FUNCTION TO CALL?
+  QUICK REFERENCE - WHICH FUNCTION TO CALL?
 ================================================================================
 
   Show the same camera to EVERYONE:
@@ -38,7 +38,7 @@
   Show a camera to ONE specific player only:
     SpawnAndEnable(hPlayer)         ← spawn + enable for one player
     DisableAndDestroy()             ← release all + kill camera
-    — or —
+    - or -
     DisableCamera(hPlayer)          ← release just that player (camera stays)
 
   Give each player their OWN camera (cinematic / path_corner guided):
@@ -54,10 +54,10 @@
   PURPOSE : "Turn on the camera for everyone."
             Spawns a single point_viewcontrol at this entity's origin/angles,
             then immediately switches ALL connected players to it.
-  WHEN    : Every player should watch the same view simultaneously —
+  WHEN    : Every player should watch the same view simultaneously -
             e.g. a cinematic intro, boss-spawn cutscene, round-end replay.
   PARAMS  :
-    hParent — (optional) Entity handle to parent the camera to.
+    hParent - (optional) Entity handle to parent the camera to.
               If the parent moves, the camera follows. null = static camera.
   NOTES   : If a camera already exists it is destroyed first (safe to call
             multiple times). Internally: SpawnCamera() -> EnableCameraAll().
@@ -69,8 +69,8 @@
   WHEN    : Only one player triggered the event and only they should see it,
             e.g. a player-triggered cutscene.
   PARAMS  :
-    hPlayer — Handle of the player to show the camera to.
-    hParent — (optional) Parent entity. Same as SpawnAndEnableAll.
+    hPlayer - Handle of the player to show the camera to.
+    hParent - (optional) Parent entity. Same as SpawnAndEnableAll.
 
 
   DisableAndDestroy()
@@ -79,7 +79,7 @@
             Releases ALL players (restores damage/taunt-cam), then kills
             the point_viewcontrol entity.
   WHEN    : The cutscene/event is over and players should regain control.
-            Also called automatically on round start/end — call manually
+            Also called automatically on round start/end - call manually
             only if you want to end the camera early mid-round.
   PARAMS  : None. Safe to call even if no camera exists.
 
@@ -103,9 +103,9 @@
   state. Safe even if no saved state exists (uses fallback defaults).
   Also removes the "no_attack" attribute as a robustness measure.
 
-  EnableCameraAll()       — Calls EnableCamera() on every connected player.
-  DisableCameraAll()      — Calls DisableCamera() on every connected player.
-  DestroyCamera()         — Sends Disable input then kills the entity.
+  EnableCameraAll()       - Calls EnableCamera() on every connected player.
+  DisableCameraAll()      - Calls DisableCamera() on every connected player.
+  DestroyCamera()         - Sends Disable input then kills the entity.
 
 ================================================================================
   [B] PER-PLAYER CAMERA  (unique camera entity per player)
@@ -117,17 +117,17 @@
             Spawns a dedicated point_viewcontrol for EACH connected player.
             Each camera can look at a target and travel toward a destination,
             making this ideal for CINEMATIC cameras that follow a path_corner
-            path — each player sees their own guided camera sequence.
+            path - each player sees their own guided camera sequence.
   WHEN    : Per-player spawn cameras, personal intro sequences, or any scene
             where every player needs a unique simultaneous camera.
   PARAMS  :
-    hTarget  — Entity handle OR targetname string the camera looks at.
+    hTarget  - Entity handle OR targetname string the camera looks at.
                Pass null to ignore.
-    hMoveTo  — Entity handle OR targetname string the camera moves toward
+    hMoveTo  - Entity handle OR targetname string the camera moves toward
                after spawning (e.g. a path_corner entity). null = static.
-    flSpeed  (default 100)  — Camera movement speed (units/sec).
-    flAccel  (default 5000) — How fast the camera accelerates to flSpeed.
-    flDecel  (default 5000) — How fast the camera decelerates when stopping.
+    flSpeed  (default 100)  - Camera movement speed (units/sec).
+    flAccel  (default 5000) - How fast the camera accelerates to flSpeed.
+    flDecel  (default 5000) - How fast the camera decelerates when stopping.
   NOTES   : Camera spawns at the script entity's origin.
             Uses spawnflags 13:
               Bit 0 (1): Start at Player position
@@ -141,7 +141,7 @@
   PURPOSE : Disables and destroys ALL per-player cameras.
             Restores every affected player's state. Clears tracking table.
   WHEN    : Per-player scene is finished. Also called automatically on all
-            round start/end events — call manually to end cameras early.
+            round start/end events - call manually to end cameras early.
   PARAMS  : None.
 
 
@@ -167,10 +167,10 @@
   The following game events automatically call DisableAndDestroy() AND
   DisableAndDestroyPerPlayer(), cleaning up all cameras:
 
-    teamplay_round_start          — New round begins.
-    teamplay_round_win            — A team wins the round.
-    scorestats_accumulated_update — End-of-round stats screen.
-    recalculate_holidays          — Fires at round end; only cleans up when
+    teamplay_round_start          - New round begins.
+    teamplay_round_win            - A team wins the round.
+    scorestats_accumulated_update - End-of-round stats screen.
+    recalculate_holidays          - Fires at round end; only cleans up when
                                     round state is 8 (Round End) or 5 (Team Win).
 
 ================================================================================
