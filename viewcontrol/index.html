@@ -9,8 +9,6 @@
   <meta property="og:title" content="Viewcontrol System — Developer Guide">
   <meta property="og:description" content="Manage shared and per-player point_viewcontrol cameras with ease.">
   <meta property="og:type" content="website">
-  
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📷</text></svg>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -28,10 +26,8 @@
       --muted:     #8b949e;
       --tag-a-bg:  #1d3557;
       --tag-b-bg:  #2d1b4e;
-      --tag-note:  #1c2a1c;
       --warn-bg:   #2a1a00;
       --warn-bd:   #d29922;
-      --note-bd:   #3fb950;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,7 +38,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     /* ── STICKY HEADER ──────────────────────────────── */
@@ -50,10 +46,9 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(13,17,23,0.92);
-      backdrop-filter: blur(12px);
+      background: #0d1117;
       border-bottom: 1px solid var(--border);
-      padding: 14px 28px;
+      padding: 16px 28px;
       display: flex;
       align-items: center;
       gap: 16px;
@@ -61,20 +56,22 @@
     }
 
     #header h1 {
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--text);
       white-space: nowrap;
+      letter-spacing: -0.02em;
     }
 
     #header .subtitle {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
       color: var(--muted);
     }
 
     #fn-bar {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       flex-wrap: wrap;
       margin-left: auto;
     }
@@ -82,189 +79,197 @@
     #fn-bar a {
       text-decoration: none;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      transition: all 0.2s ease;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      transition: all 0.15s ease;
     }
-    #fn-bar a.tag-a { background: var(--tag-a-bg); color: var(--accent); border-color: var(--accent); }
-    #fn-bar a.tag-b { background: var(--tag-b-bg); color: var(--accent4); border-color: var(--accent4); }
-    #fn-bar a:hover { transform: translateY(-1px); filter: brightness(1.2); }
+
+    #fn-bar a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(88, 166, 255, 0.1);
+    }
 
     /* ── INFO RIBBON ────────────────────────────────── */
     #ribbon {
-      background: linear-gradient(135deg, #1d3557 0%, #2d1b4e 100%);
+      background: #161b22;
       border-bottom: 1px solid var(--border);
-      padding: 18px 32px;
+      padding: 24px 32px;
     }
 
     #ribbon h2 {
-      font-size: 0.9rem;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
 
     .quick-ref {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 10px;
+      gap: 16px;
     }
 
     .qr-card {
-      background: rgba(0,0,0,0.3);
+      background: #0d1117;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      transition: transform 0.2s ease;
+      border-radius: 6px;
+      padding: 16px;
     }
-
-    .qr-card:hover { transform: scale(1.02); }
 
     .qr-card .label {
       font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 6px;
+      color: var(--accent);
+      margin-bottom: 8px;
     }
 
     code {
       font-family: 'JetBrains Mono', monospace;
-      background: rgba(255,255,255,0.07);
-      padding: 2px 5px;
-      border-radius: 4px;
-      transition: background 0.2s;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
     }
 
     .qr-card code {
-      font-size: 0.78rem;
       display: block;
-      color: var(--accent3);
-      line-height: 1.7;
-      background: none;
+      background: transparent;
       padding: 0;
+      color: var(--accent3);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
     }
 
-    .qr-card code span { color: var(--accent); }
-    .qr-card .desc { font-size: 0.72rem; color: var(--muted); margin-top: 5px; }
+    .qr-card .desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
 
     /* ── MAIN LAYOUT ────────────────────────────────── */
     #main {
       max-width: 1120px;
       margin: 0 auto;
-      padding: 36px 28px 80px;
+      padding: 48px 28px 80px;
       display: flex;
       flex-direction: column;
-      gap: 56px;
+      gap: 64px;
     }
 
     .section-heading {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
     }
 
-    .badge {
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      padding: 3px 9px;
-      border-radius: 4px;
-      text-transform: uppercase;
+    .section-heading h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text);
     }
 
-    .badge-a  { background: var(--tag-a-bg); color: var(--accent); border: 1px solid var(--accent); }
-    .badge-b  { background: var(--tag-b-bg); color: var(--accent4); border: 1px solid var(--accent4); }
-    .badge-ev { background: #1a2a1a; color: var(--accent3); border: 1px solid var(--accent3); }
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .badge-a  { background: var(--tag-a-bg); color: var(--accent); }
+    .badge-b  { background: var(--tag-b-bg); color: var(--accent4); }
+    .badge-ev { background: #1c2a1c; color: var(--accent3); }
 
     .fn-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-      gap: 16px;
+      gap: 20px;
     }
 
     .fn-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px 22px;
+      border-radius: 6px;
+      padding: 24px;
       scroll-margin-top: 100px;
-      transition: all 0.2s ease;
     }
 
-    .fn-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    .fn-card.ll {
+      opacity: 0.7;
+      border-style: dashed;
     }
-
-    .fn-card.ll { opacity: 0.75; border-style: dashed; }
 
     .fn-sig {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 12px;
+      color: var(--text);
+      margin-bottom: 16px;
     }
+    
     .fn-sig .fn-name { color: var(--accent3); }
     .fn-sig .fn-param { color: var(--accent4); }
 
     .label-inline {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       text-transform: uppercase;
       padding: 2px 6px;
-      border-radius: 4px;
-      margin-right: 6px;
+      border-radius: 3px;
+      margin-right: 8px;
     }
 
     .lbl-purpose { background: #1d2d44; color: var(--accent); }
     .lbl-when    { background: #1a2a1a; color: var(--accent3); }
-    .lbl-note    { background: var(--warn-bg); color: var(--warn-bd); border: 1px solid var(--warn-bd); }
 
     .param-table {
       width: 100%;
-      margin-top: 10px;
-      font-size: 0.75rem;
+      margin-top: 16px;
+      font-size: 0.8rem;
       border-collapse: collapse;
     }
-    .param-table th { text-align: left; color: var(--muted); border-bottom: 1px solid var(--border); padding: 4px; }
-    .param-table td { padding: 6px 4px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+    .param-table th { text-align: left; color: var(--muted); border-bottom: 1px solid var(--border); padding: 8px 4px; font-weight: 600; }
+    .param-table td { padding: 10px 4px; border-bottom: 1px solid rgba(48,54,61,0.5); }
 
-    .alert { border-radius: 8px; padding: 14px 18px; font-size: 0.83rem; margin-top: 24px; border: 1px solid transparent; }
-    .alert.info { background: #0d2035; border-color: var(--accent); color: #b0d4f8; }
-    .alert.warn { background: var(--warn-bg); border-color: var(--warn-bd); color: #f0c060; }
+    .alert { border-radius: 6px; padding: 16px; font-size: 0.85rem; margin-top: 24px; border: 1px solid transparent; }
+    .alert.info { background: #0d1117; border-color: var(--accent); color: var(--text); }
+    .alert.warn { background: #0d1117; border-color: var(--warn-bd); color: var(--text); }
 
-    .event-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
-    .event-table th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); color: var(--muted); }
-    .event-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    .event-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .event-table th { text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--border); color: var(--muted); }
+    .event-table td { padding: 12px 8px; border-bottom: 1px solid var(--border); }
 
     footer {
       text-align: center;
-      padding: 40px;
+      padding: 60px 40px;
       border-top: 1px solid var(--border);
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.8rem;
     }
 
-    .copy-hint {
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    #copyHint {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--accent3);
-      color: #000;
-      padding: 8px 16px;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--accent);
+      padding: 10px 20px;
       border-radius: 4px;
-      font-weight: bold;
+      font-size: 0.85rem;
       display: none;
       z-index: 1000;
     }
@@ -274,33 +279,33 @@
 
 <header id="header">
   <div>
-    <h1>📷 Viewcontrol System</h1>
-    <div class="subtitle">viewcontrol_controller.nut · TF2 VScript</div>
+    <h1>Viewcontrol System</h1>
+    <div class="subtitle">viewcontrol_controller.nut</div>
   </div>
   <nav id="fn-bar">
-    <a class="tag-a" href="#fn-SpawnAndEnableAll">SpawnAndEnableAll</a>
-    <a class="tag-a" href="#fn-SpawnAndEnable">SpawnAndEnable</a>
-    <a class="tag-b" href="#fn-SpawnAndEnablePerPlayer">SpawnAndEnablePerPlayer</a>
+    <a href="#fn-SpawnAndEnableAll">SpawnAndEnableAll</a>
+    <a href="#fn-SpawnAndEnable">SpawnAndEnable</a>
+    <a href="#fn-SpawnAndEnablePerPlayer">SpawnAndEnablePerPlayer</a>
   </nav>
 </header>
 
 <div id="ribbon">
-  <h2>⚡ Quick Start</h2>
+  <h2>Quick Reference</h2>
   <div class="quick-ref">
     <div class="qr-card">
-      <div class="label">Everyone</div>
+      <div class="label">Shared Camera</div>
       <code>SpawnAndEnableAll()</code>
-      <div class="desc">One camera for all players.</div>
+      <div class="desc">Activates one camera for all players simultaneously.</div>
     </div>
     <div class="qr-card">
-      <div class="label">Single Player</div>
+      <div class="label">Targeted Camera</div>
       <code>SpawnAndEnable(player)</code>
-      <div class="desc">One camera for one person.</div>
+      <div class="desc">Routes the shared camera to a specific player handle.</div>
     </div>
     <div class="qr-card">
       <div class="label">Cinematic Path</div>
       <code>SpawnAndEnablePerPlayer(...)</code>
-      <div class="desc">Unique camera paths per player.</div>
+      <div class="desc">Spawns unique cameras per-player for moving paths.</div>
     </div>
   </div>
 </div>
@@ -308,83 +313,81 @@
 <main id="main">
   <section id="overview">
     <div class="section-heading"><h2>Overview</h2></div>
-    <p>This script manages <code>point_viewcontrol</code> entities. It automatically freezes players, grants invulnerability, and restores state upon completion.</p>
+    <p>This VScript system manages <code>point_viewcontrol</code> entities for cinematic sequences. It handles player freezing (FL_ATCONTROLS), invulnerability, and state restoration automatically.</p>
     <div class="alert info">
-      <strong>Setup:</strong> Attach script to an entity. Its origin/angles define the camera.
+      <strong>Setup:</strong> Attach the script to an entity. The entity's origin and angles define the camera position.
     </div>
   </section>
 
   <section id="system-a">
-    <div class="section-heading"><span class="badge badge-a">System A</span><h2>Shared Camera</h2></div>
+    <div class="section-heading">
+      <span class="badge badge-a">System A</span>
+      <h2>Shared Camera System</h2>
+    </div>
     <div class="fn-grid">
       <div class="fn-card" id="fn-SpawnAndEnableAll">
-        <div class="fn-sig"><span class="fn-name">SpawnAndEnableAll</span>(<span class="fn-param">hParent</span>)</div>
-        <p><span class="label-inline lbl-purpose">What</span> Enables camera for all connected players.</p>
+        <div class="fn-sig"><span class="fn-name">SpawnAndEnableAll</span>(<span class="fn-param">hParent</span> = null)</div>
+        <p><span class="label-inline lbl-purpose">Function</span> Spawns the camera and enables it for every connected player.</p>
       </div>
       <div class="fn-card" id="fn-SpawnAndEnable">
-        <div class="fn-sig"><span class="fn-name">SpawnAndEnable</span>(<span class="fn-param">hPlayer</span>)</div>
-        <p><span class="label-inline lbl-purpose">What</span> Enables camera for a specific player.</p>
+        <div class="fn-sig"><span class="fn-name">SpawnAndEnable</span>(<span class="fn-param">hPlayer</span>, <span class="fn-param">hParent</span> = null)</div>
+        <p><span class="label-inline lbl-purpose">Function</span> Enables the shared camera for a single specified player.</p>
       </div>
     </div>
   </section>
 
   <section id="system-b">
-    <div class="section-heading"><span class="badge badge-b">System B</span><h2>Per-Player Cameras</h2></div>
+    <div class="section-heading">
+      <span class="badge badge-b">System B</span>
+      <h2>Per-Player System</h2>
+    </div>
     <div class="fn-grid">
       <div class="fn-card" id="fn-SpawnAndEnablePerPlayer">
-        <div class="fn-sig"><span class="fn-name">SpawnAndEnablePerPlayer</span>(...)</div>
-        <p><span class="label-inline lbl-purpose">What</span> Spawns a dedicated camera for every player. Supports <code>path_corner</code> movement.</p>
+        <div class="fn-sig"><span class="fn-name">SpawnAndEnablePerPlayer</span>(target, moveto, speed, accel, decel)</div>
+        <p><span class="label-inline lbl-purpose">Function</span> Creates a dedicated camera for each player. Ideal for <code>path_corner</code> cinematics.</p>
       </div>
     </div>
   </section>
 
   <section id="cleanup">
-    <div class="section-heading"><span class="badge badge-ev">Auto</span><h2>Cleanup</h2></div>
+    <div class="section-heading">
+      <span class="badge badge-ev">Logic</span>
+      <h2>Event Cleanup</h2>
+    </div>
+    <p>Cameras are automatically destroyed on the following game events to prevent player lock-out:</p>
     <table class="event-table">
-      <tr><th>Event</th><th>Action</th></tr>
-      <tr><td>teamplay_round_start</td><td>Automatic cleanup.</td></tr>
-      <tr><td>teamplay_round_win</td><td>Automatic cleanup.</td></tr>
+      <thead>
+        <tr><th>Event</th><th>Trigger</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>teamplay_round_start</td><td>Fires when a new round begins.</td></tr>
+        <tr><td>teamplay_round_win</td><td>Fires when a team wins the round.</td></tr>
+        <tr><td>scorestats_accumulated_update</td><td>Fires at the end-of-round stats screen.</td></tr>
+      </tbody>
     </table>
   </section>
 </main>
 
 <footer>
-  <p>viewcontrol_controller.nut · Refactored by SpookyToad</p>
-  <p style="margin-top:10px;">
-    <a href="#" style="color: var(--accent); text-decoration: none;">View Source on GitHub</a>
+  <p>viewcontrol_controller.nut &bull; Documentation by SpookyToad</p>
+  <p style="margin-top:12px;">
+    <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/edit/main/index.html">Edit this page on GitHub</a>
   </p>
 </footer>
 
-<div class="copy-hint" id="copyHint">Copied to clipboard!</div>
+<div id="copyHint">Snippet copied to clipboard</div>
 
 <script>
-  // Click-to-Copy functionality
   document.querySelectorAll('code').forEach(code => {
     code.style.cursor = 'pointer';
+    code.title = 'Click to copy';
     code.addEventListener('click', () => {
-      const text = code.innerText.split('[cite')[0].trim();
+      const text = code.innerText.trim();
       navigator.clipboard.writeText(text);
       
       const hint = document.getElementById('copyHint');
       hint.style.display = 'block';
       setTimeout(() => { hint.style.display = 'none'; }, 2000);
-      
-      code.style.background = 'var(--accent3)';
-      setTimeout(() => { code.style.background = ''; }, 200);
-    });
-  });
-
-  // Simple Scroll-Spy
-  window.addEventListener('scroll', () => {
-    const sections = document.querySelectorAll('section');
-    const navLinks = document.querySelectorAll('#fn-bar a');
-    
-    let current = "";
-    sections.forEach(section => {
-      const sectionTop = section.offsetTop;
-      if (pageYOffset >= sectionTop - 120) {
-        current = section.getAttribute('id');
-      }
     });
   });
 </script>
