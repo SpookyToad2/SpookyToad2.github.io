@@ -1,396 +1,1046 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Viewcontrol System — Developer Guide</title>
-  
-  <meta name="description" content="Documentation for viewcontrol_controller.nut — A TF2 VScript camera management system.">
-  <meta property="og:title" content="Viewcontrol System — Developer Guide">
-  <meta property="og:description" content="Manage shared and per-player point_viewcontrol cameras with ease.">
-  <meta property="og:type" content="website">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Developer guide for the TF2 VScript unified viewcontrol camera system." />
+    <meta name="theme-color" content="#0d1117" />
+    <title>Viewcontrol System — Developer Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --accent2: #f78166;
+            --accent3: #3fb950;
+            --accent4: #d2a8ff;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --tag-a-bg: #1d3557;
+            --tag-b-bg: #2d1b4e;
+            --tag-note: #1c2a1c;
+            --warn-bg: #2a1a00;
+            --warn-bd: #d29922;
+            --note-bd: #3fb950;
+        }
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  
-  <style>
-    :root {
-      --bg:        #0d1117;
-      --surface:   #161b22;
-      --border:    #30363d;
-      --accent:    #58a6ff;
-      --accent2:   #f78166;
-      --accent3:   #3fb950;
-      --accent4:   #d2a8ff;
-      --text:      #e6edf3;
-      --muted:     #8b949e;
-      --tag-a-bg:  #1d3557;
-      --tag-b-bg:  #2d1b4e;
-      --warn-bg:   #2a1a00;
-      --warn-bd:   #d29922;
-    }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.6;
-    }
+        /* ── STICKY HEADER ──────────────────────────────── */
+        #header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(13, 17, 23, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
 
-    /* ── STICKY HEADER ──────────────────────────────── */
-    #header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: #0d1117;
-      border-bottom: 1px solid var(--border);
-      padding: 16px 28px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+        #header h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent);
+            white-space: nowrap;
+        }
 
-    #header h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      letter-spacing: -0.02em;
-    }
+        #header .subtitle {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
 
-    #header .subtitle {
-      font-size: 0.8rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--muted);
-    }
+        /* Function quick-select bar */
+        #fn-bar {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
 
-    #fn-bar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-left: auto;
-    }
+        #fn-bar a {
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: background 0.15s, border-color 0.15s;
+        }
 
-    #fn-bar a {
-      text-decoration: none;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 500;
-      padding: 4px 10px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      transition: all 0.15s ease;
-    }
+        #fn-bar a.tag-a {
+            background: var(--tag-a-bg);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
 
-    #fn-bar a:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(88, 166, 255, 0.1);
-    }
+        #fn-bar a.tag-a:hover {
+            background: var(--accent);
+            color: #0d1117;
+        }
 
-    /* ── INFO RIBBON ────────────────────────────────── */
-    #ribbon {
-      background: #161b22;
-      border-bottom: 1px solid var(--border);
-      padding: 24px 32px;
-    }
+        #fn-bar a.tag-b {
+            background: var(--tag-b-bg);
+            color: var(--accent4);
+            border-color: var(--accent4);
+        }
 
-    #ribbon h2 {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
+        #fn-bar a.tag-b:hover {
+            background: var(--accent4);
+            color: #0d1117;
+        }
 
-    .quick-ref {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
+        /* ── INFO RIBBON (shown at top) ─────────────────── */
+        #ribbon {
+            background: #1b2333;
+            border-bottom: 1px solid var(--border);
+            padding: 18px 32px;
+        }
 
-    .qr-card {
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px;
-    }
+        #ribbon h2 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
 
-    .qr-card .label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 8px;
-    }
+        .quick-ref {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+        }
 
-    code {
-      font-family: 'JetBrains Mono', monospace;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 0.9em;
-    }
+        .qr-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+        }
 
-    .qr-card code {
-      display: block;
-      background: transparent;
-      padding: 0;
-      color: var(--accent3);
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-    }
+        .qr-card .label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
 
-    .qr-card .desc {
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
+        .qr-card code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            display: block;
+            color: var(--accent3);
+            line-height: 1.7;
+        }
 
-    /* ── MAIN LAYOUT ────────────────────────────────── */
-    #main {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 48px 28px 80px;
-      display: flex;
-      flex-direction: column;
-      gap: 64px;
-    }
+        .qr-card code span {
+            color: var(--accent);
+        }
 
-    .section-heading {
-      margin-bottom: 24px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
+        .qr-card .desc {
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 5px;
+        }
 
-    .section-heading h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--text);
-    }
+        /* ── MAIN LAYOUT ────────────────────────────────── */
+        #main {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 36px 28px 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 56px;
+        }
 
-    .badge {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      padding: 2px 8px;
-      border-radius: 3px;
-      text-transform: uppercase;
-      display: inline-block;
-      margin-bottom: 8px;
-    }
+        /* ── SECTION HEADINGS ───────────────────────────── */
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
 
-    .badge-a  { background: var(--tag-a-bg); color: var(--accent); }
-    .badge-b  { background: var(--tag-b-bg); color: var(--accent4); }
-    .badge-ev { background: #1c2a1c; color: var(--accent3); }
+        .section-heading .badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 3px 9px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
 
-    .fn-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-      gap: 20px;
-    }
+        .badge-a {
+            background: var(--tag-a-bg);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
 
-    .fn-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 24px;
-      scroll-margin-top: 100px;
-    }
+        .badge-b {
+            background: var(--tag-b-bg);
+            color: var(--accent4);
+            border: 1px solid var(--accent4);
+        }
 
-    .fn-card.ll {
-      opacity: 0.7;
-      border-style: dashed;
-    }
+        .badge-ev {
+            background: #1a2a1a;
+            color: var(--accent3);
+            border: 1px solid var(--accent3);
+        }
 
-    .fn-sig {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 16px;
-    }
-    
-    .fn-sig .fn-name { color: var(--accent3); }
-    .fn-sig .fn-param { color: var(--accent4); }
+        .badge-ll {
+            background: #222;
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
 
-    .label-inline {
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 3px;
-      margin-right: 8px;
-    }
+        .section-heading h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+        }
 
-    .lbl-purpose { background: #1d2d44; color: var(--accent); }
-    .lbl-when    { background: #1a2a1a; color: var(--accent3); }
+        .section-desc {
+            font-size: 0.86rem;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 820px;
+        }
 
-    .param-table {
-      width: 100%;
-      margin-top: 16px;
-      font-size: 0.8rem;
-      border-collapse: collapse;
-    }
-    .param-table th { text-align: left; color: var(--muted); border-bottom: 1px solid var(--border); padding: 8px 4px; font-weight: 600; }
-    .param-table td { padding: 10px 4px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+        /* ── FUNCTION CARDS ─────────────────────────────── */
+        .fn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+            gap: 16px;
+        }
 
-    .alert { border-radius: 6px; padding: 16px; font-size: 0.85rem; margin-top: 24px; border: 1px solid transparent; }
-    .alert.info { background: #0d1117; border-color: var(--accent); color: var(--text); }
-    .alert.warn { background: #0d1117; border-color: var(--warn-bd); color: var(--text); }
+        .fn-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 22px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            scroll-margin-top: 80px;
+        }
 
-    .event-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .event-table th { text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--border); color: var(--muted); }
-    .event-table td { padding: 12px 8px; border-bottom: 1px solid var(--border); }
+        .fn-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.15);
+        }
 
-    footer {
-      text-align: center;
-      padding: 60px 40px;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 0.8rem;
-    }
+        .fn-card.ll {
+            opacity: 0.8;
+            border-style: dashed;
+        }
 
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+        .fn-card.ll:hover {
+            border-color: var(--muted);
+            box-shadow: none;
+        }
 
-    #copyHint {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--accent);
-      padding: 10px 20px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      display: none;
-      z-index: 1000;
-    }
-  </style>
+        .fn-sig {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            word-break: break-all;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .fn-sig .fn-name {
+            color: var(--accent3);
+        }
+
+        .fn-sig .fn-param {
+            color: var(--accent4);
+        }
+
+        .fn-sig .fn-default {
+            color: var(--muted);
+        }
+
+        .fn-purpose,
+        .fn-when,
+        .fn-note,
+        .fn-params {
+            font-size: 0.82rem;
+            line-height: 1.65;
+            margin-bottom: 10px;
+        }
+
+        .label-inline {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .lbl-purpose {
+            background: #1d2d44;
+            color: var(--accent);
+        }
+
+        .lbl-when {
+            background: #1a2a1a;
+            color: var(--accent3);
+        }
+
+        .lbl-note {
+            background: var(--warn-bg);
+            color: var(--warn-bd);
+            border: 1px solid var(--warn-bd);
+        }
+
+        .lbl-params {
+            background: var(--tag-b-bg);
+            color: var(--accent4);
+        }
+
+        .fn-purpose {
+            color: var(--text);
+        }
+
+        .fn-when {
+            color: #b2dab4;
+        }
+
+        .fn-note {
+            background: var(--warn-bg);
+            border: 1px solid var(--warn-bd);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #f0c060;
+        }
+
+        .fn-note code,
+        .fn-purpose code,
+        .fn-when code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            background: rgba(255, 255, 255, 0.07);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+
+        .param-table th {
+            text-align: left;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding: 4px 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .param-table td {
+            font-size: 0.78rem;
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+            vertical-align: top;
+        }
+
+        .param-table td:first-child {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent4);
+            white-space: nowrap;
+        }
+
+        .param-table td:nth-child(2) {
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .param-table td:nth-child(3) {
+            color: var(--text);
+        }
+
+        /* ── ALERT BOXES ────────────────────────────────── */
+        .alert {
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-size: 0.83rem;
+            line-height: 1.6;
+            margin-top: 24px;
+        }
+
+        .alert.info {
+            background: #0d2035;
+            border: 1px solid var(--accent);
+            color: #b0d4f8;
+        }
+
+        .alert.warn {
+            background: var(--warn-bg);
+            border: 1px solid var(--warn-bd);
+            color: #f0c060;
+        }
+
+        .alert strong {
+            font-weight: 700;
+        }
+
+        .alert code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82em;
+            background: rgba(255, 255, 255, 0.07);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        /* ── EVENT TABLE ────────────────────────────────── */
+        .event-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+        }
+
+        .event-table th {
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--muted);
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .event-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+            vertical-align: top;
+        }
+
+        .event-table td:first-child {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent3);
+        }
+
+        .event-table td:nth-child(2) {
+            color: var(--text);
+        }
+
+        /* ── FOOTER ─────────────────────────────────────── */
+        footer {
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--muted);
+            padding: 28px;
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+    </style>
 </head>
+
 <body>
 
-<header id="header">
-  <div>
-    <h1>Viewcontrol System</h1>
-    <div class="subtitle">viewcontrol_controller.nut</div>
-  </div>
-  <nav id="fn-bar">
-    <a href="#fn-SpawnAndEnableAll">SpawnAndEnableAll</a>
-    <a href="#fn-SpawnAndEnable">SpawnAndEnable</a>
-    <a href="#fn-SpawnAndEnablePerPlayer">SpawnAndEnablePerPlayer</a>
-  </nav>
-</header>
+    <!-- ═══════════════════════════════════════════════════════════
+     STICKY HEADER — always at the top of the screen
+═══════════════════════════════════════════════════════════ -->
+    <header id="header">
+        <div>
+            <h1>Viewcontrol System</h1>
+            <div class="subtitle">viewcontrol_controller.nut · TF2 VScript · SpookyToad</div>
+        </div>
+        <nav id="fn-bar" aria-label="Quick jump to function">
+            <a class="tag-a" href="#fn-SpawnAndEnableAll">SpawnAndEnableAll</a>
+            <a class="tag-a" href="#fn-SpawnAndEnable">SpawnAndEnable</a>
+            <a class="tag-a" href="#fn-DisableAndDestroy">DisableAndDestroy</a>
+            <a class="tag-b" href="#fn-SpawnAndEnablePerPlayer">SpawnAndEnablePerPlayer</a>
+            <a class="tag-b" href="#fn-DisableAndDestroyPerPlayer">DisableAndDestroyPerPlayer</a>
+        </nav>
+    </header>
 
-<div id="ribbon">
-  <h2>Quick Reference</h2>
-  <div class="quick-ref">
-    <div class="qr-card">
-      <div class="label">Shared Camera</div>
-      <code>SpawnAndEnableAll()</code>
-      <div class="desc">Activates one camera for all players simultaneously.</div>
-    </div>
-    <div class="qr-card">
-      <div class="label">Targeted Camera</div>
-      <code>SpawnAndEnable(player)</code>
-      <div class="desc">Routes the shared camera to a specific player handle.</div>
-    </div>
-    <div class="qr-card">
-      <div class="label">Cinematic Path</div>
-      <code>SpawnAndEnablePerPlayer(...)</code>
-      <div class="desc">Spawns unique cameras per-player for moving paths.</div>
-    </div>
-  </div>
-</div>
+    <!-- ═══════════════════════════════════════════════════════════
+     TOP RIBBON — quick reference (always visible on load)
+═══════════════════════════════════════════════════════════ -->
+    <div id="ribbon">
+        <h2>Quick Reference — Which function do I call?</h2>
+        <div class="quick-ref">
 
-<main id="main">
-  <section id="overview">
-    <div class="section-heading"><h2>Overview</h2></div>
-    <p>This VScript system manages <code>point_viewcontrol</code> entities for cinematic sequences. It handles player freezing (FL_ATCONTROLS), invulnerability, and state restoration automatically.</p>
-    <div class="alert info">
-      <strong>Setup:</strong> Attach the script to an entity. The entity's origin and angles define the camera position.
-    </div>
-  </section>
+            <div class="qr-card">
+                <div class="label">Camera for Everyone</div>
+                <code>
+        <span>SpawnAndEnableAll()</span>     &nbsp;← enable<br>
+        <span>DisableAndDestroy()</span>      &nbsp;← disable
+      </code>
+                <div class="desc">One camera, every player sees it simultaneously (e.g. cinematic intro, boss spawn).
+                </div>
+            </div>
 
-  <section id="system-a">
-    <div class="section-heading">
-      <span class="badge badge-a">System A</span>
-      <h2>Shared Camera System</h2>
-    </div>
-    <div class="fn-grid">
-      <div class="fn-card" id="fn-SpawnAndEnableAll">
-        <div class="fn-sig"><span class="fn-name">SpawnAndEnableAll</span>(<span class="fn-param">hParent</span> = null)</div>
-        <p><span class="label-inline lbl-purpose">Function</span> Spawns the camera and enables it for every connected player.</p>
-      </div>
-      <div class="fn-card" id="fn-SpawnAndEnable">
-        <div class="fn-sig"><span class="fn-name">SpawnAndEnable</span>(<span class="fn-param">hPlayer</span>, <span class="fn-param">hParent</span> = null)</div>
-        <p><span class="label-inline lbl-purpose">Function</span> Enables the shared camera for a single specified player.</p>
-      </div>
-    </div>
-  </section>
+            <div class="qr-card">
+                <div class="label">Camera for ONE Player</div>
+                <code>
+        <span>SpawnAndEnable(player)</span>   ← enable<br>
+        <span>DisableAndDestroy()</span>       ← disable
+      </code>
+                <div class="desc">Shared camera shown to only one player (e.g. player-triggered cutscene).</div>
+            </div>
 
-  <section id="system-b">
-    <div class="section-heading">
-      <span class="badge badge-b">System B</span>
-      <h2>Per-Player System</h2>
+            <div class="qr-card">
+                <div class="label">Cinematic / Path Camera — Per-Player</div>
+                <code>
+        <span>SpawnAndEnablePerPlayer(</span><br>
+        &nbsp; hTarget, hMoveTo,<br>
+        &nbsp; speed, accel, decel<br>
+        <span>)</span>                        ← enable<br>
+        <span>DisableAndDestroyPerPlayer()</span> ← disable
+      </code>
+                <div class="desc">Each player gets their <strong>own</strong> camera that can follow a
+                    <code>path_corner</code> entity — perfect for personal intros or guided cinematic sequences unique
+                    per player.</div>
+            </div>
+
+            <div class="qr-card">
+                <div class="label">Automatic Cleanup Events</div>
+                <code>
+        teamplay_round_start<br>
+        teamplay_round_win<br>
+        scorestats_accumulated_update<br>
+        recalculate_holidays
+      </code>
+                <div class="desc">All cameras are destroyed automatically on these events. No manual cleanup needed at
+                    round end.</div>
+            </div>
+
+        </div>
     </div>
-    <div class="fn-grid">
-      <div class="fn-card" id="fn-SpawnAndEnablePerPlayer">
-        <div class="fn-sig"><span class="fn-name">SpawnAndEnablePerPlayer</span>(target, moveto, speed, accel, decel)</div>
-        <p><span class="label-inline lbl-purpose">Function</span> Creates a dedicated camera for each player. Ideal for <code>path_corner</code> cinematics.</p>
-      </div>
-    </div>
-  </section>
 
-  <section id="cleanup">
-    <div class="section-heading">
-      <span class="badge badge-ev">Logic</span>
-      <h2>Event Cleanup</h2>
-    </div>
-    <p>Cameras are automatically destroyed on the following game events to prevent player lock-out:</p>
-    <table class="event-table">
-      <thead>
-        <tr><th>Event</th><th>Trigger</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>teamplay_round_start</td><td>Fires when a new round begins.</td></tr>
-        <tr><td>teamplay_round_win</td><td>Fires when a team wins the round.</td></tr>
-        <tr><td>scorestats_accumulated_update</td><td>Fires at the end-of-round stats screen.</td></tr>
-      </tbody>
-    </table>
-  </section>
-</main>
+    <!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════ -->
+    <main id="main">
 
-<footer>
-  <p>viewcontrol_controller.nut &bull; Documentation by SpookyToad</p>
-  <p style="margin-top:12px;">
-    <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/edit/main/index.html">Edit this page on GitHub</a>
-  </p>
-</footer>
+        <!-- ── OVERVIEW ───────────────────────────────────── -->
+        <section>
+            <div class="section-heading">
+                <h2>Overview</h2>
+            </div>
+            <p class="section-desc">
+                This script manages <code>point_viewcontrol</code> camera entities in TF2 VScript.
+                It exposes two independent camera systems that can run side by side.
+                Both systems automatically <strong>freeze players</strong> (FL_ATCONTROLS flag),
+                make them <strong>invulnerable</strong>, and <strong>restore all state</strong>
+                (damage, taunt-cam) when the camera is released.
+            </p>
+            <div class="alert info">
+                <strong>How to set up:</strong>
+                Attach <code>viewcontrol_controller.nut</code> to any entity
+                (e.g. <code>info_target</code>, <code>info_teleport_destination</code>).
+                The entity's <strong>origin and angles</strong> become the camera's spawn position and facing direction.
+                Then call one of the <code>SpawnAndEnable*</code> functions to activate.
+            </div>
+        </section>
 
-<div id="copyHint">Snippet copied to clipboard</div>
+        <!-- ══════════════════════════════════════════════════
+       SYSTEM A — SHARED CAMERA
+  ══════════════════════════════════════════════════ -->
+        <section>
+            <div class="section-heading">
+                <span class="badge badge-a">System A</span>
+                <h2>Shared Camera — One Camera for Everyone</h2>
+            </div>
+            <p class="section-desc">
+                A single <code>point_viewcontrol</code> entity is spawned and shown to all (or one) players.
+                Great for cinematic cutscenes, boss introductions, or event sequences where
+                every player watches the same view.
+            </p>
 
-<script>
-  document.querySelectorAll('code').forEach(code => {
-    code.style.cursor = 'pointer';
-    code.title = 'Click to copy';
-    code.addEventListener('click', () => {
-      const text = code.innerText.trim();
-      navigator.clipboard.writeText(text);
-      
-      const hint = document.getElementById('copyHint');
-      hint.style.display = 'block';
-      setTimeout(() => { hint.style.display = 'none'; }, 2000);
-    });
-  });
-</script>
+            <div class="fn-grid">
+
+                <!-- SpawnAndEnableAll -->
+                <div class="fn-card" id="fn-SpawnAndEnableAll">
+                    <div class="fn-sig">
+                        <span class="fn-name">SpawnAndEnableAll</span>(<span class="fn-param">hParent</span> <span
+                            class="fn-default">= null</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        The <strong>main "turn on the camera for everyone"</strong> function.
+                        Spawns a single <code>point_viewcontrol</code> at this entity's origin/angles,
+                        then immediately switches <strong>all connected players</strong> to it.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Use for any event where every player should watch the same camera simultaneously —
+                        e.g. a cinematic intro sequence, a boss-spawn cutscene, or an end-of-round replay.
+                    </p>
+                    <div class="fn-params">
+                        <span class="label-inline lbl-params">Params</span>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Default</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>hParent</td>
+                                    <td>null</td>
+                                    <td>Optional entity handle to parent the camera to. If the parent moves, the camera
+                                        follows. Pass <code>null</code> for a static camera.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="fn-note">
+                        <span class="label-inline lbl-note">Note</span>
+                        If a camera already exists it is <strong>destroyed first</strong>, so calling this multiple
+                        times is safe.
+                        Internally calls <code>SpawnCamera()</code> → <code>EnableCameraAll()</code>.
+                    </p>
+                </div>
+
+                <!-- SpawnAndEnable -->
+                <div class="fn-card" id="fn-SpawnAndEnable">
+                    <div class="fn-sig">
+                        <span class="fn-name">SpawnAndEnable</span>(<span class="fn-param">hPlayer</span>, <span
+                            class="fn-param">hParent</span> <span class="fn-default">= null</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Same as <code>SpawnAndEnableAll</code>, but only enables the camera for <strong>one specific
+                            player</strong>.
+                        Spawns the shared camera and routes it to <code>hPlayer</code> only.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Use when only one player triggered the event and only they should see the cutscene,
+                        e.g. a player-specific intro or a triggered sequence.
+                    </p>
+                    <div class="fn-params">
+                        <span class="label-inline lbl-params">Params</span>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Default</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>hPlayer</td>
+                                    <td>—</td>
+                                    <td>Handle of the player to show the camera to.</td>
+                                </tr>
+                                <tr>
+                                    <td>hParent</td>
+                                    <td>null</td>
+                                    <td>Optional parent entity (same as <code>SpawnAndEnableAll</code>).</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DisableAndDestroy -->
+                <div class="fn-card" id="fn-DisableAndDestroy">
+                    <div class="fn-sig">
+                        <span class="fn-name">DisableAndDestroy</span>()
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Shuts down the shared camera. Releases <strong>all players</strong> from the camera view,
+                        restores their saved <code>m_takedamage</code> and taunt-cam state,
+                        then <strong>kills</strong> the <code>point_viewcontrol</code> entity.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Call this when the cutscene or event is over and players should regain control.
+                        Also called <strong>automatically</strong> on round start/end events — so you only
+                        need to call it if you want to end the camera early.
+                    </p>
+                    <p class="fn-note">
+                        <span class="label-inline lbl-note">Note</span>
+                        Safe to call even if no camera exists (it checks validity first).
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Low-level shared -->
+            <h3
+                style="margin-top:28px; margin-bottom:12px; font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;">
+                Lower-level shared camera functions <span style="font-weight:400;">(usually not called directly)</span>
+            </h3>
+            <div class="fn-grid">
+
+                <div class="fn-card ll">
+                    <div class="fn-sig"><span class="fn-name">SpawnCamera</span>(<span class="fn-param">hParent</span>
+                        <span class="fn-default">= null</span>)</div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Only <strong>spawns</strong> the <code>point_viewcontrol</code> — does NOT enable it for any
+                        player.
+                        Stores the handle in <code>hCamera</code>.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Useful if you want to pre-spawn the camera and enable it for players one by one later
+                        with <code>EnableCamera(player)</code>.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig"><span class="fn-name">EnableCamera</span>(<span class="fn-param">player</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Switches a single player to the already-spawned shared camera.
+                        Saves their <code>m_takedamage</code> and <code>ForceTauntCam</code>, freezes them,
+                        makes them invulnerable, sets first-person mode, and sends the <code>Enable</code> input.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        After <code>SpawnCamera()</code>, to enable per-player. Also handy to add a late-joining
+                        player to an existing live camera.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig"><span class="fn-name">DisableCamera</span>(<span class="fn-param">player</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Releases a single player from the shared camera. Un-freezes them, re-enables local model draw,
+                        and restores their saved damage/taunt-cam values.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        When one specific player should leave the camera view while others remain watching.
+                    </p>
+                    <p class="fn-note">
+                        <span class="label-inline lbl-note">Note</span>
+                        Safe even if no saved state exists — has fallback defaults.
+                        Also removes the <code>no_attack</code> attribute as a robustness measure.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig"><span class="fn-name">EnableCameraAll</span>()</div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Calls <code>EnableCamera()</code> on every connected player.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Internally used by <code>SpawnAndEnableAll()</code>. Call manually if you pre-spawned
+                        via <code>SpawnCamera()</code> and now want to enable for everyone.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig"><span class="fn-name">DisableCameraAll</span>()</div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Calls <code>DisableCamera()</code> on every connected player.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Internally used by <code>DisableAndDestroy()</code>.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig"><span class="fn-name">DestroyCamera</span>()</div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Sends <code>Disable</code> to the camera then calls <code>.Kill()</code> on it.
+                        Nullifies <code>hCamera</code>.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Called automatically by <code>DisableAndDestroy()</code>. Call directly only if you
+                        want to destroy the entity without restoring player states.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════
+       SYSTEM B — PER-PLAYER CAMERA
+  ══════════════════════════════════════════════════ -->
+        <section>
+            <div class="section-heading">
+                <span class="badge badge-b">System B</span>
+                <h2>Per-Player Cameras — Unique Camera per Player</h2>
+            </div>
+            <p class="section-desc">
+                A separate <code>point_viewcontrol</code> entity is spawned for <strong>each connected player</strong>
+                individually. This enables each player to see a different camera view at the same time.
+                Cameras in this system support a <strong>lookat target</strong> and a <strong>move-to
+                    destination</strong>
+                so they can follow a <code>path_corner</code> entity — making them ideal for
+                <em>personal cinematic sequences</em> or guided camera paths unique to each player.
+            </p>
+            <div class="alert warn">
+                <strong>Cinematic / path_corner support:</strong>
+                The <code>SpawnAndEnablePerPlayer()</code> family of functions is designed to create
+                "cinematic" cameras that can follow a <code>path_corner</code> entity via the
+                <code>moveto</code> property. Pass the <code>path_corner</code> entity handle or
+                targetname as <code>hMoveTo</code> to guide the camera along the path.
+                Use <code>hTarget</code> to make the camera look at a specific entity while it moves.
+            </div>
+
+            <div class="fn-grid" style="margin-top:20px;">
+
+                <!-- SpawnAndEnablePerPlayer -->
+                <div class="fn-card" id="fn-SpawnAndEnablePerPlayer">
+                    <div class="fn-sig">
+                        <span class="fn-name">SpawnAndEnablePerPlayer</span>(<br>
+                        &nbsp;&nbsp;<span class="fn-param">hTarget</span> <span class="fn-default">= null</span>,
+                        <span class="fn-param">hMoveTo</span> <span class="fn-default">= null</span>,<br>
+                        &nbsp;&nbsp;<span class="fn-param">flSpeed</span> <span class="fn-default">= 100</span>,
+                        <span class="fn-param">flAccel</span> <span class="fn-default">= 5000</span>,
+                        <span class="fn-param">flDecel</span> <span class="fn-default">= 5000</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        The <strong>main "give each player their own camera"</strong> function.
+                        Cleans up any old per-player cameras, then spawns a dedicated
+                        <code>point_viewcontrol</code> for each connected player.
+                        Each camera can have a lookat target and a move-to destination.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Use when every player needs their own unique camera view simultaneously —
+                        e.g. a per-player spawn camera, a personal cinematic intro,
+                        or a camera guided along a <code>path_corner</code> path to each player's position.
+                    </p>
+                    <div class="fn-params">
+                        <span class="label-inline lbl-params">Params</span>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Default</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>hTarget</td>
+                                    <td>null</td>
+                                    <td>Entity handle <em>or</em> targetname string of the entity the camera should
+                                        <strong>look at</strong>. Pass <code>null</code> to ignore.</td>
+                                </tr>
+                                <tr>
+                                    <td>hMoveTo</td>
+                                    <td>null</td>
+                                    <td>Entity handle <em>or</em> targetname string of the entity the camera should
+                                        <strong>move toward</strong> after spawning (e.g. a <code>path_corner</code>).
+                                        Pass <code>null</code> for a static camera.</td>
+                                </tr>
+                                <tr>
+                                    <td>flSpeed</td>
+                                    <td>100</td>
+                                    <td>Camera movement speed (units/sec).</td>
+                                </tr>
+                                <tr>
+                                    <td>flAccel</td>
+                                    <td>5000</td>
+                                    <td>How quickly the camera accelerates to <code>flSpeed</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td>flDecel</td>
+                                    <td>5000</td>
+                                    <td>How quickly the camera decelerates when stopping.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="fn-note">
+                        <span class="label-inline lbl-note">Note</span>
+                        Camera spawns at the script entity's origin with spawnflags <code>13</code>:
+                        Bit 0 (Start at player pos) + Bit 2 (Freeze player — <strong>required or the camera won't
+                            work</strong>) + Bit 3 (Infinite hold time).
+                    </p>
+                </div>
+
+                <!-- DisableAndDestroyPerPlayer -->
+                <div class="fn-card" id="fn-DisableAndDestroyPerPlayer">
+                    <div class="fn-sig">
+                        <span class="fn-name">DisableAndDestroyPerPlayer</span>()
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Disables and <strong>destroys all per-player camera entities</strong>.
+                        Restores every affected player's state (unfreeze, re-enable damage).
+                        Clears the internal camera tracking table.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        When the per-player scene is finished. Also called <strong>automatically</strong>
+                        on all round start/end events — call it manually only to end the cameras early.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Low-level per-player -->
+            <h3
+                style="margin-top:28px; margin-bottom:12px; font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;">
+                Lower-level per-player functions <span style="font-weight:400;">(normally not called directly)</span>
+            </h3>
+            <div class="fn-grid">
+
+                <div class="fn-card ll">
+                    <div class="fn-sig">
+                        <span class="fn-name">SpawnViewControlForPlayer</span>(<span class="fn-param">player</span>,
+                        <span class="fn-param">hTarget</span>, <span class="fn-param">hMoveTo</span>, <span
+                            class="fn-param">flSpeed</span>, <span class="fn-param">flAccel</span>, <span
+                            class="fn-param">flDecel</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Spawns and enables a camera for <strong>one specific player</strong>.
+                        Generates a unique targetname (<code>scriptentityname_viewcontrol_&lt;entindex&gt;</code>).
+                        Stores the camera handle in <code>hPlayerCameras[entindex]</code>.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Used internally by <code>SpawnAndEnablePerPlayer()</code>. Call directly only if you
+                        need to create a camera for a single new player without touching everyone else.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig">
+                        <span class="fn-name">EnablePerPlayerCamera</span>(<span class="fn-param">player</span>, <span
+                            class="fn-param">camera</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Applies per-player constraints (freeze, invulnerability, first-person) and sends
+                        the <code>Enable</code> input to the given camera with the player as activator.
+                        Uses a separate saved-state key (<code>viewcontrol_pp_saved_state</code>) so it
+                        does not conflict with the shared camera system.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Called automatically by <code>SpawnViewControlForPlayer()</code>. You can call it
+                        manually if you have a camera handle and want to re-enable it for a player.
+                    </p>
+                </div>
+
+                <div class="fn-card ll">
+                    <div class="fn-sig">
+                        <span class="fn-name">DisablePerPlayerCamera</span>(<span class="fn-param">player</span>, <span
+                            class="fn-param">camera</span>)
+                    </div>
+                    <p class="fn-purpose">
+                        <span class="label-inline lbl-purpose">What</span>
+                        Releases a single player from their per-player camera. Restores their saved state,
+                        removes freeze flag, re-enables local draw, and removes the <code>no_attack</code> attribute.
+                    </p>
+                    <p class="fn-when">
+                        <span class="label-inline lbl-when">When</span>
+                        Called by <code>DisableAndDestroyPerPlayer()</code> for each player. Useful to release
+                        one player's camera early without touching others.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════
+       EVENT CLEANUP
+  ══════════════════════════════════════════════════ -->
+        <section>
+            <div class="section-heading">
+                <span class="badge badge-ev">Auto</span>
+                <h2>Automatic Event Cleanup</h2>
+            </div>
+            <p class="section-desc">
+                Both systems automatically destroy all cameras on the following game events.
+                <strong>You do not need to handle round-end cleanup yourself.</strong>
+            </p>
+            <table class="event-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>When it fires</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>teamplay_round_start</td>
+                        <td>A new round begins. Cameras are destroyed so players enter the round normally.</td>
+                    </tr>
+                    <tr>
+                        <td>teamplay_round_win</td>
+                        <td>A team wins the round. Cameras released before win state fully resolves.</td>
+                    </tr>
+                    <tr>
+                        <td>scorestats_accumulated_update</td>
+                        <td>End-of-round stats screen. Cameras destroyed and the event table is also cleaned up from the
+                            root scope.</td>
+                    </tr>
+                    <tr>
+                        <td>recalculate_holidays</td>
+                        <td>Fires at round end. Script checks round state — only cleans if state is <code>8</code>
+                            (Round End) or <code>5</code> (Team Win / Arena).</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="alert info" style="margin-top:14px;">
+                <strong>CollectEventsInScope(events)</strong> — Internal utility that binds these callbacks
+                and self-cleans the event table from the root scope after use.
+                <strong>Do not call this manually.</strong> It is invoked automatically when the script loads.
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        viewcontrol_controller.nut · Based on Easy PVC Control by worMatty · Refactored by SpookyToad
+    </footer>
 
 </body>
+
 </html>
