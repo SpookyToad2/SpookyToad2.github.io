@@ -154,16 +154,6 @@
             color: var(--muted);
         }
 
-        .card-title-link {
-            text-decoration: none;
-            color: var(--accent);
-        }
-
-        .card-title-link:hover {
-            text-decoration: underline;
-            text-underline-offset: 3px;
-        }
-
         .btn-download {
             display: inline-block;
             margin-top: 4px;
@@ -222,24 +212,22 @@
         <div class="intro">
             <h2>Developer Reference</h2>
             <p>Reference pages for the TF2 VScript systems. Select a tool below.</p>
-        </div> 
+        </div>
 
         <div class="cards">
 
-            <div class="card">
+            <a class="card" href="./viewcontrol">
                 <div class="card-label">Guide</div>
-                <div class="card-title">
-                    <a class="card-title-link" href="./viewcontrol">Viewcontrol System</a>
-                </div>
+                <div class="card-title">Viewcontrol System</div>
                 <div class="card-desc">
                     API reference for the unified <code
                         style="font-family:'JetBrains Mono',monospace;font-size:0.8em;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;">point_viewcontrol</code>
                     camera controller. Documents all public functions, parameters, and event-based cleanup behaviour.
                 </div>
-                <a class="btn-download" href="./resources/viewcontrol_master.nut"
-                    download="viewcontrol_master_v1.nut">Download v1.0</a>
+                <a class="btn-download" href="./resources/viewcontrol_master.nut" download="viewcontrol_master_v1.nut"
+                    onclick="event.stopPropagation()">Download v1.0</a>
                 <div class="card-meta">viewcontrol</div>
-            </div>
+            </a>
 
             <a class="card" href="./netprops">
                 <div class="card-label">Explorer</div>
@@ -262,10 +250,19 @@
     </footer>
 
     <script>
-        fetch('https://api.counterapi.dev/v1/nutbrain-vscript/main/up')
-            .then(r => r.json())
-            .then(d => { document.getElementById('visit-count').textContent = d.count; })
-            .catch(() => { });
+        const el = document.getElementById('visit-count');
+        if (!sessionStorage.getItem('visited_main')) {
+            sessionStorage.setItem('visited_main', '1');
+            fetch('https://api.counterapi.dev/v1/nutbrain-vscript/main/up')
+                .then(r => r.json())
+                .then(d => { el.textContent = d.count; })
+                .catch(() => { });
+        } else {
+            fetch('https://api.counterapi.dev/v1/nutbrain-vscript/main')
+                .then(r => r.json())
+                .then(d => { el.textContent = d.count; })
+                .catch(() => { });
+        }
     </script>
 
 </body>
