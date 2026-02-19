@@ -193,6 +193,20 @@
             color: var(--muted);
             padding: 24px;
             border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .visit-counter {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--border);
+        }
+
+        .visit-counter span {
+            color: var(--muted);
         }
     </style>
 </head>
@@ -243,8 +257,16 @@
     </main>
 
     <footer>
-        TF2 VScript &mdash; SpookyToad
+        <span>TF2 VScript &mdash; SpookyToad</span>
+        <span class="visit-counter">views: <span id="visit-count">—</span></span>
     </footer>
+
+    <script>
+        fetch('https://api.counterapi.dev/v1/nutbrain-vscript/main/up')
+            .then(r => r.json())
+            .then(d => { document.getElementById('visit-count').textContent = d.count; })
+            .catch(() => { });
+    </script>
 
 </body>
 
