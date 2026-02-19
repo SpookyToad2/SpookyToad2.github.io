@@ -463,12 +463,24 @@
 
         /* ── FOOTER ─────────────────────────────────────── */
         footer {
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
             font-size: 0.72rem;
             color: var(--muted);
             padding: 28px;
             border-top: 1px solid var(--border);
             margin-top: 60px;
+        }
+
+        .visit-counter {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--border);
+        }
+
+        .visit-counter span {
+            color: var(--muted);
         }
     </style>
 </head>
@@ -529,7 +541,8 @@
       </code>
                 <div class="desc">Each player gets their <strong>own</strong> camera that can follow a
                     <code>path_corner</code> entity — perfect for personal intros or guided cinematic sequences unique
-                    per player.</div>
+                    per player.
+                </div>
             </div>
 
             <div class="qr-card">
@@ -711,7 +724,8 @@
 
                 <div class="fn-card ll">
                     <div class="fn-sig"><span class="fn-name">SpawnCamera</span>(<span class="fn-param">hParent</span>
-                        <span class="fn-default">= null</span>)</div>
+                        <span class="fn-default">= null</span>)
+                    </div>
                     <p class="fn-purpose">
                         <span class="label-inline lbl-purpose">What</span>
                         Only <strong>spawns</strong> the <code>point_viewcontrol</code> — does NOT enable it for any
@@ -867,14 +881,16 @@
                                     <td>hTarget</td>
                                     <td>null</td>
                                     <td>Entity handle <em>or</em> targetname string of the entity the camera should
-                                        <strong>look at</strong>. Pass <code>null</code> to ignore.</td>
+                                        <strong>look at</strong>. Pass <code>null</code> to ignore.
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>hMoveTo</td>
                                     <td>null</td>
                                     <td>Entity handle <em>or</em> targetname string of the entity the camera should
                                         <strong>move toward</strong> after spawning (e.g. a <code>path_corner</code>).
-                                        Pass <code>null</code> for a static camera.</td>
+                                        Pass <code>null</code> for a static camera.
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>flSpeed</td>
@@ -992,7 +1008,7 @@
        EVENT CLEANUP
   ══════════════════════════════════════════════════ -->
         <section>
-            <div class="section-heading"> 
+            <div class="section-heading">
                 <span class="badge badge-ev">Auto</span>
                 <h2>Automatic Event Cleanup</h2>
             </div>
@@ -1038,8 +1054,24 @@
     </main>
 
     <footer>
-        viewcontrol_controller.nut · Based on Easy PVC Control by worMatty · Refactored by SpookyToad
+        <span>viewcontrol_controller.nut &middot; Based on Easy PVC Control by worMatty &middot; Refactored by
+            SpookyToad</span>
+        <span class="visit-counter">views: <span id="visit-count">—</span></span>
     </footer>
+
+    <script>
+        (function () {
+            const key = 'counted_viewcontrol';
+            const endpoint = sessionStorage.getItem(key)
+                ? 'https://api.counterapi.dev/v1/nutbrain-vscript/viewcontrol'
+                : 'https://api.counterapi.dev/v1/nutbrain-vscript/viewcontrol/up';
+            fetch(endpoint)
+                .then(r => r.json())
+                .then(d => { document.getElementById('visit-count').textContent = d.count; })
+                .catch(() => { });
+            sessionStorage.setItem(key, '1');
+        })();
+    </script>
 
 </body>
 
