@@ -100,6 +100,7 @@
         }
 
         .card {
+            position: relative;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -154,7 +155,21 @@
             color: var(--muted);
         }
 
+        /* stretched-link: title anchor covers entire card */
+        .card-title-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card-title-link::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+        }
+
         .btn-download {
+            position: relative;
+            z-index: 1;
             display: inline-block;
             margin-top: 4px;
             padding: 6px 14px;
@@ -216,18 +231,20 @@
 
         <div class="cards">
 
-            <a class="card" href="./viewcontrol">
+            <div class="card">
                 <div class="card-label">Guide</div>
-                <div class="card-title">Viewcontrol System</div>
+                <div class="card-title">
+                    <a class="card-title-link" href="./viewcontrol">Viewcontrol System</a>
+                </div>
                 <div class="card-desc">
                     API reference for the unified <code
                         style="font-family:'JetBrains Mono',monospace;font-size:0.8em;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;">point_viewcontrol</code>
                     camera controller. Documents all public functions, parameters, and event-based cleanup behaviour.
                 </div>
-                <a class="btn-download" href="./resources/viewcontrol_master.nut" download="viewcontrol_master_v1.nut"
-                    onclick="event.stopPropagation()">Download v1.0</a>
+                <a class="btn-download" href="./resources/viewcontrol_master.nut"
+                    download="viewcontrol_master_v1.nut">Download v1.0</a>
                 <div class="card-meta">viewcontrol</div>
-            </a>
+            </div>
 
             <a class="card" href="./netprops">
                 <div class="card-label">Explorer</div>
