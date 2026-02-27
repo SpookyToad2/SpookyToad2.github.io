@@ -49,7 +49,7 @@
   [A] SHARED CAMERA  (one camera entity for all or one player)
 ================================================================================
 
-  SpawnAndEnableAll(hParent = null)
+  SpawnAndEnableAll(hParent = null, szAttachment = null)
   ----------------------------------
   PURPOSE : "Turn on the camera for everyone."
             Spawns a single point_viewcontrol at this entity's origin/angles,
@@ -59,11 +59,12 @@
   PARAMS  :
     hParent - (optional) Entity handle to parent the camera to.
               If the parent moves, the camera follows. null = static camera.
+    szAttachment - (optional) String name of the attachment point on the parent.
   NOTES   : If a camera already exists it is destroyed first (safe to call
             multiple times). Internally: SpawnCamera() -> EnableCameraAll().
 
 
-  SpawnAndEnable(hPlayer, hParent = null)
+  SpawnAndEnable(hPlayer, hParent = null, szAttachment = null)
   ----------------------------------------
   PURPOSE : Same as SpawnAndEnableAll but only for ONE specific player.
   WHEN    : Only one player triggered the event and only they should see it,
@@ -71,6 +72,7 @@
   PARAMS  :
     hPlayer - Handle of the player to show the camera to.
     hParent - (optional) Parent entity. Same as SpawnAndEnableAll.
+    szAttachment - (optional) String name of the attachment point on the parent.
 
 
   DisableAndDestroy()
@@ -199,20 +201,22 @@ angCameraAngles <- null;
  * Spawns the camera and enables it for a specific player.
  * @param {handle} hPlayer - The player to enable the camera for.
  * @param {handle} hParent - Optional entity to parent the camera to.
+ * @param {string} szAttachment - Optional attachment point name.
  */
-function SpawnAndEnable(hPlayer, hParent = null)
+function SpawnAndEnable(hPlayer, hParent = null, szAttachment = null)
 {
-	SpawnCamera(hParent);
+	SpawnCamera(hParent, szAttachment);
 	EnableCamera(hPlayer);
 }
 
 /**
  * Spawns the camera and enables it for all players.
  * @param {handle} hParent - Optional entity to parent the camera to.
+ * @param {string} szAttachment - Optional attachment point name.
  */
-function SpawnAndEnableAll(hParent = null)
+function SpawnAndEnableAll(hParent = null, szAttachment = null)
 {
-	SpawnCamera(hParent);
+	SpawnCamera(hParent, szAttachment);
 	EnableCameraAll();
 }
 
@@ -228,8 +232,9 @@ function DisableAndDestroy()
 /**
  * Spawns the point_viewcontrol entity at this entity's origin/angles.
  * @param {handle} hParent - Optional entity to parent the camera to. If null, no parent.
+ * @param {string} szAttachment - Optional attachment point name.
  */
-function SpawnCamera(hParent = null)
+function SpawnCamera(hParent = null, szAttachment = null)
 {
 	if (hCamera != null && hCamera.IsValid())
 	{
@@ -251,6 +256,11 @@ function SpawnCamera(hParent = null)
 	if (hParent != null && hParent.IsValid())
 	{
 		hCamera.AcceptInput("SetParent", "!activator", hParent, hParent);
+		
+		if (szAttachment != null && szAttachment != "")
+		{
+			hCamera.AcceptInput("SetParentAttachment", szAttachment, hParent, hParent);
+		}
 	}
 }
 
