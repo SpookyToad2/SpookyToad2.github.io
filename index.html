@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="TF2 VScript developer tools" />
+    <meta name="theme-color" content="#0d1117" />
+    <title>TF2 VScript Tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --accent3: #3fb950;
+            --text: #e6edf3;
+            --muted: #8b949e;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── HEADER ─────────────────────────────────── */
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 18px 32px;
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+        }
+
+        header h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        header .sub {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* ── MAIN ───────────────────────────────────── */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 24px;
+            gap: 40px;
+        }
+
+        .intro {
+            text-align: center;
+            max-width: 520px;
+        }
+
+        .intro h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .intro p {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        /* ── CARDS ──────────────────────────────────── */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 760px;
+        }
+
+        .card {
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 28px 26px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.12);
+        }
+
+        .card-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--muted);
+        }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .card:nth-child(2) .card-title {
+            color: var(--accent3);
+        }
+
+        .card-desc {
+            font-size: 0.83rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .card-meta {
+            margin-top: auto;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--border);
+        }
+
+        .card:hover .card-meta {
+            color: var(--muted);
+        }
+
+        /* stretched-link: title anchor covers entire card */
+        .card-title-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card-title-link::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+        }
+
+        .btn-download {
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            margin-top: 4px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: var(--accent3);
+            border: 1px solid var(--accent3);
+            border-radius: 6px;
+            background: transparent;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            align-self: flex-start;
+        }
+
+        .btn-download:hover {
+            background: var(--accent3);
+            color: #0d1117;
+        }
+
+        /* ── FOOTER ─────────────────────────────────── */
+        footer {
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--muted);
+            padding: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .visit-counter {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--border);
+        }
+
+        .visit-counter span {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>TF2 VScript Tools</h1>
+        <span class="sub">SpookyToad</span>
+    </header>
+
+    <main>
+        <div class="intro">
+            <h2>Developer Reference</h2>
+            <p>Reference pages for the TF2 VScript systems. Select an option below.</p>
+        </div>
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="card-label">Guide</div>
+                <div class="card-title">
+                    <a class="card-title-link" href="./viewcontrol">Viewcontrol System</a>
+                </div>
+                <div class="card-desc">
+                    API reference for the unified <code
+                        style="font-family:'JetBrains Mono',monospace;font-size:0.8em;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;">point_viewcontrol</code>
+                    camera controller. Documents all public functions, parameters, and event-based cleanup behaviour.
+                </div>
+                <a class="btn-download" href="./resources/viewcontrol_master_v1a.nut"
+                    download="viewcontrol_master_v1a.nut">Download v1a</a>
+                <div class="card-meta">viewcontrol</div>
+            </div>
+
+            <a class="card" href="./netprops">
+                <div class="card-label">Explorer</div>
+                <div class="card-title">Datamap Explorer</div>
+                <div class="card-desc">
+                    Interactive browser for TF2 entity datamaps. Search classes, filter by flag, and look up
+                    NetProp offsets and field sizes from a parsed <code
+                        style="font-family:'JetBrains Mono',monospace;font-size:0.8em;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;">datamaps.txt</code>
+                    dump.
+                </div>
+                <div class="card-meta">netprops</div>
+            </a>
+
+        </div>
+    </main>
+
+    <footer>
+        <span>TF2 VScript Tools &mdash; SpookyToad</span> 
+        <span class="visit-counter">views: <span id="visit-count">—</span></span>
+    </footer>
+
+    <script>
+        const el = document.getElementById('visit-count');
+        if (!sessionStorage.getItem('visited_main')) {
+            sessionStorage.setItem('visited_main', '1');
+            fetch('https://api.counterapi.dev/v1/nutbrain-vscript/main/up')
+                .then(r => r.json())
+                .then(d => { el.textContent = d.count; })
+                .catch(() => { });
+        } else {
+            fetch('https://api.counterapi.dev/v1/nutbrain-vscript/main')
+                .then(r => r.json())
+                .then(d => { el.textContent = d.count; })
+                .catch(() => { });
+        }
+    </script>
+
+</body>
+
+</html>
