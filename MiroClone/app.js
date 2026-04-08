@@ -873,6 +873,34 @@ function appendConsoleMessage(consoleEl, text, tone = "log") {
   consoleEl.scrollTop = consoleEl.scrollHeight;
 }
 
+function renderCodeEditorFallback(body, message) {
+  body.className = "item-body";
+  body.innerHTML = "";
+  const shell = document.createElement("div");
+  shell.style.height = "100%";
+  shell.style.display = "flex";
+  shell.style.flexDirection = "column";
+  shell.style.background = "#020617";
+  shell.style.color = "#e2e8f0";
+  shell.style.padding = "16px";
+
+  const heading = document.createElement("div");
+  heading.style.fontWeight = "700";
+  heading.style.marginBottom = "8px";
+  heading.textContent = "Code Editor could not initialize";
+
+  const pre = document.createElement("pre");
+  pre.style.margin = "0";
+  pre.style.whiteSpace = "pre-wrap";
+  pre.style.fontFamily = "Consolas, Monaco, monospace";
+  pre.style.fontSize = "12px";
+  pre.style.color = "#fda4af";
+  pre.textContent = message;
+
+  shell.append(heading, pre);
+  body.append(shell);
+}
+
 function createPythonExtensions() {
   return [
     lineNumbers(),
@@ -1137,162 +1165,169 @@ function renderShapeItem(item, body) {
 }
 
 function renderCodeEditorItem(item, body) {
-  if (!item.code) {
-    item.code = [
-      "def greet(name):",
-      "    print(f'Hello, {name}!')",
-      "",
-      "for person in ['Miro', 'BoardSpace']:",
-      "    greet(person)",
-    ].join("\n");
-  }
-  if (typeof item.consoleHeight !== "number") item.consoleHeight = 160;
-
-  body.className = "item-body tw-bg-slate-950 tw-text-slate-100 tw-overflow-hidden";
-
-  const shell = document.createElement("div");
-  shell.className = "tw-h-full tw-flex tw-flex-col tw-bg-slate-950 tw-text-slate-100 dark";
-
-  const toolbar = document.createElement("div");
-  toolbar.className = "tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-slate-800 tw-bg-slate-900/95 tw-px-3 tw-py-2";
-
-  const title = document.createElement("div");
-  title.className = "tw-text-xs tw-font-semibold tw-uppercase tw-tracking-[0.28em] tw-text-slate-400";
-  title.textContent = "Python Code Editor";
-
-  const controls = document.createElement("div");
-  controls.className = "tw-flex tw-items-center tw-gap-2";
-
-  const status = document.createElement("span");
-  status.className = "tw-text-xs tw-text-slate-400";
-  status.textContent = "Idle";
-
-  const runBtn = document.createElement("button");
-  runBtn.type = "button";
-  runBtn.className = "tw-rounded-lg tw-bg-emerald-500 tw-px-3 tw-py-1.5 tw-text-sm tw-font-semibold tw-text-white hover:tw-bg-emerald-400";
-  runBtn.textContent = "Run";
-
-  const stopBtn = document.createElement("button");
-  stopBtn.type = "button";
-  stopBtn.className = "tw-rounded-lg tw-bg-rose-500 tw-px-3 tw-py-1.5 tw-text-sm tw-font-semibold tw-text-white hover:tw-bg-rose-400";
-  stopBtn.textContent = "Stop";
-
-  controls.append(status, runBtn, stopBtn);
-  toolbar.append(title, controls);
-
-  const editorHost = document.createElement("div");
-  editorHost.className = "tw-min-h-0 tw-flex-1 tw-bg-slate-950";
-
-  const resizeHandle = document.createElement("div");
-  resizeHandle.className = "tw-h-2 tw-cursor-row-resize tw-bg-slate-800";
-
-  const consoleWrap = document.createElement("div");
-  consoleWrap.className = "tw-border-t tw-border-slate-800 tw-bg-black";
-  consoleWrap.style.height = `${item.consoleHeight}px`;
-
-  const consoleHead = document.createElement("div");
-  consoleHead.className = "tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-800 tw-bg-slate-950 tw-px-3 tw-py-2";
-  consoleHead.innerHTML = '<span class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-[0.22em] tw-text-slate-500">Console</span>';
-
-  const clearBtn = document.createElement("button");
-  clearBtn.type = "button";
-  clearBtn.className = "tw-text-xs tw-font-medium tw-text-slate-400 hover:tw-text-white";
-  clearBtn.textContent = "Clear";
-  consoleHead.append(clearBtn);
-
-  const consoleEl = document.createElement("div");
-  consoleEl.className = "tw-h-[calc(100%-41px)] tw-overflow-auto tw-p-3 tw-font-mono tw-text-xs tw-leading-6 tw-text-emerald-300";
-
-  consoleWrap.append(consoleHead, consoleEl);
-  shell.append(toolbar, editorHost, resizeHandle, consoleWrap);
-  body.append(shell);
-
-  const editorView = new EditorView({
-    state: EditorState.create({
-      doc: item.code,
-      extensions: [
-        ...createPythonExtensions(),
-        EditorView.updateListener.of((update) => {
-          if (!update.docChanged) return;
-          item.code = update.state.doc.toString();
-          scheduleSave("Code editor updated and saved.");
-        }),
-      ],
-    }),
-    parent: editorHost,
-  });
-
-  let worker = null;
-  const spinWorker = () => {
-    if (worker) {
-      worker.terminate();
-      if (worker._objectUrl) URL.revokeObjectURL(worker._objectUrl);
+  try {
+    if (!item.code) {
+      item.code = [
+        "def greet(name):",
+        "    print(f'Hello, {name}!')",
+        "",
+        "for person in ['Miro', 'BoardSpace']:",
+        "    greet(person)",
+      ].join("\n");
     }
-    worker = makeCodeEditorWorker();
-    worker.onmessage = (event) => {
-      const data = event.data || {};
-      if (data.type === "stdout") appendConsoleMessage(consoleEl, data.message, "log");
-      if (data.type === "stderr") appendConsoleMessage(consoleEl, data.message, "error");
-      if (data.type === "done") {
-        status.textContent = data.error ? "Failed" : "Finished";
-        runBtn.disabled = false;
-        stopBtn.disabled = false;
-      }
-    };
-    return worker;
-  };
-  spinWorker();
+    if (typeof item.consoleHeight !== "number") item.consoleHeight = 160;
 
-  runBtn.addEventListener("click", () => {
-    status.textContent = "Running...";
-    runBtn.disabled = true;
-    stopBtn.disabled = false;
-    consoleEl.innerHTML = "";
-    appendConsoleMessage(consoleEl, "$ python main.py", "log");
-    spinWorker().postMessage({ type: "run", code: editorView.state.doc.toString() });
-  });
+    body.className = "item-body tw-bg-slate-950 tw-text-slate-100 tw-overflow-hidden";
 
-  stopBtn.addEventListener("click", () => {
-    if (worker) worker.terminate();
-    appendConsoleMessage(consoleEl, "Execution stopped.", "error");
-    status.textContent = "Stopped";
-    runBtn.disabled = false;
-    stopBtn.disabled = false;
-    spinWorker();
-  });
+    const shell = document.createElement("div");
+    shell.className = "tw-h-full tw-flex tw-flex-col tw-bg-slate-950 tw-text-slate-100 dark";
 
-  clearBtn.addEventListener("click", () => {
-    consoleEl.innerHTML = "";
+    const toolbar = document.createElement("div");
+    toolbar.className = "tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-slate-800 tw-bg-slate-900/95 tw-px-3 tw-py-2";
+
+    const title = document.createElement("div");
+    title.className = "tw-text-xs tw-font-semibold tw-uppercase tw-tracking-[0.28em] tw-text-slate-400";
+    title.textContent = "Python Code Editor";
+
+    const controls = document.createElement("div");
+    controls.className = "tw-flex tw-items-center tw-gap-2";
+
+    const status = document.createElement("span");
+    status.className = "tw-text-xs tw-text-slate-400";
     status.textContent = "Idle";
-  });
 
-  let resizingConsole = false;
-  let resizeStartY = 0;
-  let resizeStartHeight = item.consoleHeight;
-  resizeHandle.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    resizingConsole = true;
-    resizeStartY = event.clientY;
-    resizeStartHeight = item.consoleHeight;
-    resizeHandle.setPointerCapture?.(event.pointerId);
-  });
-  resizeHandle.addEventListener("pointermove", (event) => {
-    if (!resizingConsole) return;
-    const delta = resizeStartY - event.clientY;
-    item.consoleHeight = clamp(resizeStartHeight + delta, 96, Math.max(120, item.height - 180));
+    const runBtn = document.createElement("button");
+    runBtn.type = "button";
+    runBtn.className = "tw-rounded-lg tw-bg-emerald-500 tw-px-3 tw-py-1.5 tw-text-sm tw-font-semibold tw-text-white hover:tw-bg-emerald-400";
+    runBtn.textContent = "Run";
+
+    const stopBtn = document.createElement("button");
+    stopBtn.type = "button";
+    stopBtn.className = "tw-rounded-lg tw-bg-rose-500 tw-px-3 tw-py-1.5 tw-text-sm tw-font-semibold tw-text-white hover:tw-bg-rose-400";
+    stopBtn.textContent = "Stop";
+
+    controls.append(status, runBtn, stopBtn);
+    toolbar.append(title, controls);
+
+    const editorHost = document.createElement("div");
+    editorHost.className = "tw-min-h-0 tw-flex-1 tw-bg-slate-950";
+
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = "tw-h-2 tw-cursor-row-resize tw-bg-slate-800";
+
+    const consoleWrap = document.createElement("div");
+    consoleWrap.className = "tw-border-t tw-border-slate-800 tw-bg-black";
     consoleWrap.style.height = `${item.consoleHeight}px`;
-    editorView.requestMeasure();
-  });
-  const finishResize = (event) => {
-    if (!resizingConsole) return;
-    resizingConsole = false;
-    resizeHandle.releasePointerCapture?.(event.pointerId);
-    scheduleSave("Console resized and saved.");
-  };
-  resizeHandle.addEventListener("pointerup", finishResize);
-  resizeHandle.addEventListener("pointercancel", finishResize);
 
-  codeEditorWidgets.set(item.id, { editorView, worker });
+    const consoleHead = document.createElement("div");
+    consoleHead.className = "tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-800 tw-bg-slate-950 tw-px-3 tw-py-2";
+    consoleHead.innerHTML = '<span class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-[0.22em] tw-text-slate-500">Console</span>';
+
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "tw-text-xs tw-font-medium tw-text-slate-400 hover:tw-text-white";
+    clearBtn.textContent = "Clear";
+    consoleHead.append(clearBtn);
+
+    const consoleEl = document.createElement("div");
+    consoleEl.className = "tw-overflow-auto tw-p-3 tw-font-mono tw-text-xs tw-leading-6 tw-text-emerald-300";
+    consoleEl.style.height = "calc(100% - 41px)";
+
+    consoleWrap.append(consoleHead, consoleEl);
+    shell.append(toolbar, editorHost, resizeHandle, consoleWrap);
+    body.append(shell);
+
+    const editorView = new EditorView({
+      state: EditorState.create({
+        doc: item.code,
+        extensions: [
+          ...createPythonExtensions(),
+          EditorView.updateListener.of((update) => {
+            if (!update.docChanged) return;
+            item.code = update.state.doc.toString();
+            scheduleSave("Code editor updated and saved.");
+          }),
+        ],
+      }),
+      parent: editorHost,
+    });
+
+    let worker = null;
+    const spinWorker = () => {
+      if (worker) {
+        worker.terminate();
+        if (worker._objectUrl) URL.revokeObjectURL(worker._objectUrl);
+      }
+      worker = makeCodeEditorWorker();
+      worker.onmessage = (event) => {
+        const data = event.data || {};
+        if (data.type === "stdout") appendConsoleMessage(consoleEl, data.message, "log");
+        if (data.type === "stderr") appendConsoleMessage(consoleEl, data.message, "error");
+        if (data.type === "done") {
+          status.textContent = data.error ? "Failed" : "Finished";
+          runBtn.disabled = false;
+          stopBtn.disabled = false;
+        }
+      };
+      return worker;
+    };
+    spinWorker();
+
+    runBtn.addEventListener("click", () => {
+      status.textContent = "Running...";
+      runBtn.disabled = true;
+      stopBtn.disabled = false;
+      consoleEl.innerHTML = "";
+      appendConsoleMessage(consoleEl, "$ python main.py", "log");
+      spinWorker().postMessage({ type: "run", code: editorView.state.doc.toString() });
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (worker) worker.terminate();
+      appendConsoleMessage(consoleEl, "Execution stopped.", "error");
+      status.textContent = "Stopped";
+      runBtn.disabled = false;
+      stopBtn.disabled = false;
+      spinWorker();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      consoleEl.innerHTML = "";
+      status.textContent = "Idle";
+    });
+
+    let resizingConsole = false;
+    let resizeStartY = 0;
+    let resizeStartHeight = item.consoleHeight;
+    resizeHandle.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      resizingConsole = true;
+      resizeStartY = event.clientY;
+      resizeStartHeight = item.consoleHeight;
+      resizeHandle.setPointerCapture?.(event.pointerId);
+    });
+    resizeHandle.addEventListener("pointermove", (event) => {
+      if (!resizingConsole) return;
+      const delta = resizeStartY - event.clientY;
+      item.consoleHeight = clamp(resizeStartHeight + delta, 96, Math.max(120, item.height - 180));
+      consoleWrap.style.height = `${item.consoleHeight}px`;
+      editorView.requestMeasure();
+    });
+    const finishResize = (event) => {
+      if (!resizingConsole) return;
+      resizingConsole = false;
+      resizeHandle.releasePointerCapture?.(event.pointerId);
+      scheduleSave("Console resized and saved.");
+    };
+    resizeHandle.addEventListener("pointerup", finishResize);
+    resizeHandle.addEventListener("pointercancel", finishResize);
+
+    codeEditorWidgets.set(item.id, { editorView, worker });
+  } catch (error) {
+    console.error("Code editor render failed:", error);
+    renderCodeEditorFallback(body, error?.stack || error?.message || String(error));
+    setStatus("Code editor failed to initialize.");
+  }
 }
 
 async function renderBoard() {
@@ -1367,7 +1402,10 @@ function addCodeEditorAtCenter() {
     width: 560,
     height: 420,
   });
-  renderBoard();
+  renderBoard().catch((error) => {
+    console.error("Failed to render code editor item:", error);
+    setStatus("Code editor failed to render.");
+  });
   scheduleSave("Code editor added and saved.");
 }
 
