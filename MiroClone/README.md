@@ -24,6 +24,7 @@ Static whiteboard app that runs on GitHub Pages.
 - Pan/zoom board and drag/resize cards
 - Freehand drawing with mouse or graphics tablet pen
 - Sticky notes
+- Python code editor widget with line numbers, syntax highlighting, autocomplete, run/stop controls, and console output
 - Live cursor/name presence for other open app sessions (same browser origin via BroadcastChannel)
 
 ## Important storage note
@@ -62,6 +63,14 @@ Manual fallback commands:
 - Python launcher: `py -m http.server 8080`
 - Python: `python -m http.server 8080`
 - Node: `npx http-server . -p 8080 -c-1`
+
+## Code Editor widget dependencies
+The code editor widget is front-end only and uses CDN-delivered libraries, so no extra `npm install` step is required for it:
+- `tailwindcss` via Play CDN for widget styling
+- `CodeMirror 6` via `esm.sh` for the editor, Python highlighting, line numbers, and autocomplete
+- `Pyodide` via `jsDelivr` for Python execution in the browser
+
+After starting the local server, open a board and click `Code Editor` in the top toolbar to add the widget.
 
 ## Deploy on GitHub Pages
 1. Push these files to a GitHub repository.

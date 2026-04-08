@@ -1,5 +1,12 @@
 ﻿import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs";
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js";
+import { EditorState } from "https://esm.sh/@codemirror/state@6.5.2";
+import { EditorView, keymap, drawSelection, highlightActiveLine, lineNumbers, highlightActiveLineGutter } from "https://esm.sh/@codemirror/view@6.38.6";
+import { history, defaultKeymap, historyKeymap, indentWithTab } from "https://esm.sh/@codemirror/commands@6.8.1";
+import { autocompletion, closeBrackets, closeBracketsKeymap } from "https://esm.sh/@codemirror/autocomplete@6.19.0";
+import { indentOnInput, bracketMatching, foldGutter, syntaxHighlighting, defaultHighlightStyle } from "https://esm.sh/@codemirror/language@6.11.3";
+import { python } from "https://esm.sh/@codemirror/lang-python@6.2.1";
+import { oneDark } from "https://esm.sh/@codemirror/theme-one-dark@6.1.3";
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
 
 const STORAGE_USERS = "miro_clone_users_v1";
@@ -11,6 +18,13 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const IMAGE_EXTS = new Set(["gif", "png", "webp", "jpg", "jpeg"]);
 const BOARD_COORD_MIN = -50000;
 const BOARD_COORD_SIZE = 100000;
+const PYODIDE_INDEX_URL = "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/";
+const PYTHON_COMPLETIONS = [
+  "print", "len", "range", "enumerate", "zip", "map", "filter", "sum", "min", "max", "sorted",
+  "list", "dict", "set", "tuple", "str", "int", "float", "bool", "type", "isinstance",
+  "import", "from", "as", "def", "class", "return", "for", "while", "if", "elif", "else",
+  "try", "except", "finally", "with", "lambda", "pass", "break", "continue", "yield",
+];
 const WS_URL = (() => {
   const protocol = location.protocol === "https:" ? "wss" : "ws";
   const host = location.hostname || "localhost";
@@ -45,6 +59,7 @@ const resetViewBtn = document.getElementById("resetViewBtn");
 const fileInput = document.getElementById("fileInput");
 const shapeTypeSelect = document.getElementById("shapeTypeSelect");
 const addShape3dBtn = document.getElementById("addShape3dBtn");
+const addCodeEditorBtn = document.getElementById("addCodeEditorBtn");
 const toolCursorBtn = document.getElementById("toolCursorBtn");
 const toolSelectBtn = document.getElementById("toolSelectBtn");
 const toolDrawBtn = document.getElementById("toolDrawBtn");
@@ -79,6 +94,7 @@ let wsConnected = false;
 let wsReconnectTimer = null;
 let wsShouldReconnect = true;
 const shapeRenderers = new Map();
+const codeEditorWidgets = new Map();
 
 const viewState = { x: 200, y: 120, zoom: 1 };
 const drawState = { active: false, pointerId: null, stroke: null, pathEl: null };
@@ -791,6 +807,98 @@ async function getFileRecord(id) {
   db.close();
   return result;
 }
+
+function pythonCompletionSource(context) {
+  const word = context.matchBefore(/\w*/);
+  if (!word || (!word.text && !context.explicit)) return null;
+  return {
+    from: word.from,
+    options: PYTHON_COMPLETIONS
+      .filter((label) => label.startsWith(word.text))
+      .map((label) => ({ label, type: "keyword" })),
+  };
+}
+
+function getCodeEditorWorkerSource() {
+  return `
+let pyodideReadyPromise = null;
+async function ensurePyodide() {
+  if (!pyodideReadyPromise) {
+    importScripts("${PYODIDE_INDEX_URL}pyodide.js");
+    pyodideReadyPromise = loadPyodide({ indexURL: "${PYODIDE_INDEX_URL}" });
+  }
+  return pyodideReadyPromise;
+}
+self.onmessage = async (event) => {
+  const { type, code } = event.data || {};
+  if (type !== "run") return;
+  try {
+    const pyodide = await ensurePyodide();
+    if (pyodide.setStdout) pyodide.setStdout({ batched: (msg) => self.postMessage({ type: "stdout", message: msg }) });
+    if (pyodide.setStderr) pyodide.setStderr({ batched: (msg) => self.postMessage({ type: "stderr", message: msg }) });
+    await pyodide.runPythonAsync(code || "");
+    self.postMessage({ type: "done" });
+  } catch (error) {
+    self.postMessage({ type: "stderr", message: error && error.message ? error.message : String(error) });
+    self.postMessage({ type: "done", error: true });
+  }
+};
+`;
+}
+
+function makeCodeEditorWorker() {
+  const blob = new Blob([getCodeEditorWorkerSource()], { type: "text/javascript" });
+  const objectUrl = URL.createObjectURL(blob);
+  const worker = new Worker(objectUrl);
+  worker._objectUrl = objectUrl;
+  return worker;
+}
+
+function clearCodeEditorWidgets() {
+  for (const widget of codeEditorWidgets.values()) {
+    if (widget.worker) widget.worker.terminate();
+    if (widget.editorView) widget.editorView.destroy();
+    if (widget.worker?._objectUrl) URL.revokeObjectURL(widget.worker._objectUrl);
+  }
+  codeEditorWidgets.clear();
+}
+
+function appendConsoleMessage(consoleEl, text, tone = "log") {
+  const line = document.createElement("div");
+  line.className = tone === "error"
+    ? "tw-text-rose-300 tw-whitespace-pre-wrap"
+    : "tw-text-emerald-300 tw-whitespace-pre-wrap";
+  line.textContent = text;
+  consoleEl.append(line);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function createPythonExtensions() {
+  return [
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    history(),
+    drawSelection(),
+    indentOnInput(),
+    bracketMatching(),
+    closeBrackets(),
+    foldGutter(),
+    highlightActiveLine(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...closeBracketsKeymap, indentWithTab]),
+    python(),
+    autocompletion({ override: [pythonCompletionSource] }),
+    oneDark,
+    EditorView.lineWrapping,
+    EditorView.theme({
+      "&": { height: "100%", fontSize: "13px" },
+      ".cm-scroller": { overflow: "auto", fontFamily: "Consolas, Monaco, monospace" },
+      ".cm-content": { padding: "12px 0" },
+      ".cm-gutters": { backgroundColor: "#111827", color: "#6b7280", border: "none" },
+    }),
+  ];
+}
+
 function makeItemShell(item) {
   const card = document.createElement("article");
   card.className = "board-item";
@@ -812,6 +920,13 @@ function makeItemShell(item) {
   remove.style.fontSize = "0.75rem";
   remove.addEventListener("click", () => {
     pushHistory();
+    const codeWidget = codeEditorWidgets.get(item.id);
+    if (codeWidget) {
+      if (codeWidget.worker) codeWidget.worker.terminate();
+      if (codeWidget.worker?._objectUrl) URL.revokeObjectURL(codeWidget.worker._objectUrl);
+      if (codeWidget.editorView) codeWidget.editorView.destroy();
+      codeEditorWidgets.delete(item.id);
+    }
     activeBoard.items = activeBoard.items.filter((it) => it.id !== item.id);
     card.remove();
     scheduleSave("Item deleted and saved.");
@@ -1021,8 +1136,168 @@ function renderShapeItem(item, body) {
   wrap.addEventListener("pointercancel", finishRotate);
 }
 
+function renderCodeEditorItem(item, body) {
+  if (!item.code) {
+    item.code = [
+      "def greet(name):",
+      "    print(f'Hello, {name}!')",
+      "",
+      "for person in ['Miro', 'BoardSpace']:",
+      "    greet(person)",
+    ].join("\n");
+  }
+  if (typeof item.consoleHeight !== "number") item.consoleHeight = 160;
+
+  body.className = "item-body tw-bg-slate-950 tw-text-slate-100 tw-overflow-hidden";
+
+  const shell = document.createElement("div");
+  shell.className = "tw-h-full tw-flex tw-flex-col tw-bg-slate-950 tw-text-slate-100 dark";
+
+  const toolbar = document.createElement("div");
+  toolbar.className = "tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-slate-800 tw-bg-slate-900/95 tw-px-3 tw-py-2";
+
+  const title = document.createElement("div");
+  title.className = "tw-text-xs tw-font-semibold tw-uppercase tw-tracking-[0.28em] tw-text-slate-400";
+  title.textContent = "Python Code Editor";
+
+  const controls = document.createElement("div");
+  controls.className = "tw-flex tw-items-center tw-gap-2";
+
+  const status = document.createElement("span");
+  status.className = "tw-text-xs tw-text-slate-400";
+  status.textContent = "Idle";
+
+  const runBtn = document.createElement("button");
+  runBtn.type = "button";
+  runBtn.className = "tw-rounded-lg tw-bg-emerald-500 tw-px-3 tw-py-1.5 tw-text-sm tw-font-semibold tw-text-white hover:tw-bg-emerald-400";
+  runBtn.textContent = "Run";
+
+  const stopBtn = document.createElement("button");
+  stopBtn.type = "button";
+  stopBtn.className = "tw-rounded-lg tw-bg-rose-500 tw-px-3 tw-py-1.5 tw-text-sm tw-font-semibold tw-text-white hover:tw-bg-rose-400";
+  stopBtn.textContent = "Stop";
+
+  controls.append(status, runBtn, stopBtn);
+  toolbar.append(title, controls);
+
+  const editorHost = document.createElement("div");
+  editorHost.className = "tw-min-h-0 tw-flex-1 tw-bg-slate-950";
+
+  const resizeHandle = document.createElement("div");
+  resizeHandle.className = "tw-h-2 tw-cursor-row-resize tw-bg-slate-800";
+
+  const consoleWrap = document.createElement("div");
+  consoleWrap.className = "tw-border-t tw-border-slate-800 tw-bg-black";
+  consoleWrap.style.height = `${item.consoleHeight}px`;
+
+  const consoleHead = document.createElement("div");
+  consoleHead.className = "tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-800 tw-bg-slate-950 tw-px-3 tw-py-2";
+  consoleHead.innerHTML = '<span class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-[0.22em] tw-text-slate-500">Console</span>';
+
+  const clearBtn = document.createElement("button");
+  clearBtn.type = "button";
+  clearBtn.className = "tw-text-xs tw-font-medium tw-text-slate-400 hover:tw-text-white";
+  clearBtn.textContent = "Clear";
+  consoleHead.append(clearBtn);
+
+  const consoleEl = document.createElement("div");
+  consoleEl.className = "tw-h-[calc(100%-41px)] tw-overflow-auto tw-p-3 tw-font-mono tw-text-xs tw-leading-6 tw-text-emerald-300";
+
+  consoleWrap.append(consoleHead, consoleEl);
+  shell.append(toolbar, editorHost, resizeHandle, consoleWrap);
+  body.append(shell);
+
+  const editorView = new EditorView({
+    state: EditorState.create({
+      doc: item.code,
+      extensions: [
+        ...createPythonExtensions(),
+        EditorView.updateListener.of((update) => {
+          if (!update.docChanged) return;
+          item.code = update.state.doc.toString();
+          scheduleSave("Code editor updated and saved.");
+        }),
+      ],
+    }),
+    parent: editorHost,
+  });
+
+  let worker = null;
+  const spinWorker = () => {
+    if (worker) {
+      worker.terminate();
+      if (worker._objectUrl) URL.revokeObjectURL(worker._objectUrl);
+    }
+    worker = makeCodeEditorWorker();
+    worker.onmessage = (event) => {
+      const data = event.data || {};
+      if (data.type === "stdout") appendConsoleMessage(consoleEl, data.message, "log");
+      if (data.type === "stderr") appendConsoleMessage(consoleEl, data.message, "error");
+      if (data.type === "done") {
+        status.textContent = data.error ? "Failed" : "Finished";
+        runBtn.disabled = false;
+        stopBtn.disabled = false;
+      }
+    };
+    return worker;
+  };
+  spinWorker();
+
+  runBtn.addEventListener("click", () => {
+    status.textContent = "Running...";
+    runBtn.disabled = true;
+    stopBtn.disabled = false;
+    consoleEl.innerHTML = "";
+    appendConsoleMessage(consoleEl, "$ python main.py", "log");
+    spinWorker().postMessage({ type: "run", code: editorView.state.doc.toString() });
+  });
+
+  stopBtn.addEventListener("click", () => {
+    if (worker) worker.terminate();
+    appendConsoleMessage(consoleEl, "Execution stopped.", "error");
+    status.textContent = "Stopped";
+    runBtn.disabled = false;
+    stopBtn.disabled = false;
+    spinWorker();
+  });
+
+  clearBtn.addEventListener("click", () => {
+    consoleEl.innerHTML = "";
+    status.textContent = "Idle";
+  });
+
+  let resizingConsole = false;
+  let resizeStartY = 0;
+  let resizeStartHeight = item.consoleHeight;
+  resizeHandle.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    resizingConsole = true;
+    resizeStartY = event.clientY;
+    resizeStartHeight = item.consoleHeight;
+    resizeHandle.setPointerCapture?.(event.pointerId);
+  });
+  resizeHandle.addEventListener("pointermove", (event) => {
+    if (!resizingConsole) return;
+    const delta = resizeStartY - event.clientY;
+    item.consoleHeight = clamp(resizeStartHeight + delta, 96, Math.max(120, item.height - 180));
+    consoleWrap.style.height = `${item.consoleHeight}px`;
+    editorView.requestMeasure();
+  });
+  const finishResize = (event) => {
+    if (!resizingConsole) return;
+    resizingConsole = false;
+    resizeHandle.releasePointerCapture?.(event.pointerId);
+    scheduleSave("Console resized and saved.");
+  };
+  resizeHandle.addEventListener("pointerup", finishResize);
+  resizeHandle.addEventListener("pointercancel", finishResize);
+
+  codeEditorWidgets.set(item.id, { editorView, worker });
+}
+
 async function renderBoard() {
   clearShapeRenderers();
+  clearCodeEditorWidgets();
   boardInner.innerHTML = "";
   drawLayer = createDrawLayer();
   if (!activeBoard) return;
@@ -1034,6 +1309,7 @@ async function renderBoard() {
     if (item.type === "pdf") renderPdfItem(item, body);
     if (item.type === "sticky") renderStickyItem(item, body);
     if (item.type === "shape3d") renderShapeItem(item, body);
+    if (item.type === "codeEditor") renderCodeEditorItem(item, body);
   }
 
   boardInner.append(drawLayer);
@@ -1071,6 +1347,28 @@ function addStickyAtCenter() {
   activeBoard.items.push({ id: nextItemId(), type: "sticky", name: "Sticky", text: "Type notes here", x: center.x, y: center.y, width: 220, height: 180 });
   renderBoard();
   scheduleSave("Sticky added and saved.");
+}
+
+function addCodeEditorAtCenter() {
+  if (!activeBoard) return;
+  const center = boardSpaceFromClient(
+    boardViewport.getBoundingClientRect().left + boardViewport.clientWidth / 2,
+    boardViewport.getBoundingClientRect().top + boardViewport.clientHeight / 2,
+  );
+  pushHistory();
+  activeBoard.items.push({
+    id: nextItemId(),
+    type: "codeEditor",
+    name: "Code Editor",
+    code: "print('Hello from BoardSpace')\n",
+    consoleHeight: 160,
+    x: center.x,
+    y: center.y,
+    width: 560,
+    height: 420,
+  });
+  renderBoard();
+  scheduleSave("Code editor added and saved.");
 }
 
 function buildShapeItem(shapeType, overrides = {}) {
@@ -1435,6 +1733,7 @@ function bindEvents() {
   copyBoardLinkBtn.addEventListener("click", copyActiveBoardLink);
   saveBoardBtn.addEventListener("click", () => { saveBoardsState(); setStatus("Saved manually."); });
   addStickyBtn.addEventListener("click", addStickyAtCenter);
+  addCodeEditorBtn.addEventListener("click", addCodeEditorAtCenter);
   resetViewBtn.addEventListener("click", () => {
     pushHistory();
     Object.assign(viewState, { x: 200, y: 120, zoom: 1 });

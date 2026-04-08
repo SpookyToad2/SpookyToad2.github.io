@@ -7,6 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      darkMode: "class",
+      prefix: "tw-",
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -113,6 +122,7 @@
           </label>
           <button id="addShape3dBtn" class="btn primary">Add 3D</button>
           <button id="addStickyBtn" class="btn">Add Sticky</button>
+          <button id="addCodeEditorBtn" class="btn primary">Code Editor</button>
           <button id="resetViewBtn" class="btn">Reset View</button>
         </div>
       </header>
