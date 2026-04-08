@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BoardSpace - Miro Style Clone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-bg"></div>
+
+  <main>
+    <section id="authView" class="panel auth-panel">
+      <h1>BoardSpace</h1>
+      <p class="muted">Create your account or login to continue on your board.</p>
+
+      <form id="authForm" class="stack">
+        <label>
+          Username
+          <input id="usernameInput" type="text" minlength="3" required placeholder="Your name" />
+        </label>
+
+        <label>
+          Password
+          <input id="passwordInput" type="password" minlength="4" required placeholder="Password" />
+        </label>
+
+        <div class="row gap">
+          <button id="registerBtn" type="button" class="btn primary">Register</button>
+          <button id="loginBtn" type="button" class="btn">Login</button>
+        </div>
+      </form>
+
+      <p id="authMessage" class="message"></p>
+      <p class="muted small">
+        Note: This GitHub Pages version stores data in your browser only.
+      </p>
+    </section>
+
+    <section id="dashboardView" class="panel dashboard-panel hidden">
+      <div class="dashboard-head">
+        <h2>Your Boards</h2>
+        <div class="row gap">
+          <strong id="dashboardUserText"></strong>
+          <button id="dashboardLogoutBtn" class="btn">Logout</button>
+        </div>
+      </div>
+
+      <form id="createBoardForm" class="row gap">
+        <input id="newBoardNameInput" type="text" placeholder="New board name" minlength="2" maxlength="80" />
+        <button id="createBoardBtn" type="submit" class="btn primary">Create Board</button>
+      </form>
+
+      <p class="muted small">Open any board from the list or share its unique link.</p>
+      <div id="boardsList" class="boards-list"></div>
+      <p id="dashboardMessage" class="message"></p>
+    </section>
+
+    <section id="boardView" class="hidden">
+      <aside id="toolSidebar" class="tool-sidebar">
+        <button id="toolCursorBtn" class="tool-btn" title="Cursor">⌖</button>
+        <button id="toolSelectBtn" class="tool-btn" title="Select">▭</button>
+        <button id="toolDrawBtn" class="tool-btn active" title="Draw">✎</button>
+        <button id="toolEraserBtn" class="tool-btn" title="Eraser">⌫</button>
+        <div class="tool-divider"></div>
+        <label class="tool-option">
+          Color
+          <input id="toolColorInput" type="color" value="#111111" />
+        </label>
+        <label class="tool-option">
+          Size
+          <input id="toolSizeInput" type="range" min="1" max="16" value="3" />
+        </label>
+        <button id="toolSelectAllBtn" class="tool-btn wide" title="Select all">All</button>
+        <button id="toolDeleteBtn" class="tool-btn wide danger" title="Delete selection">Del</button>
+      </aside>
+
+      <header class="toolbar">
+        <div class="left-group">
+          <button id="backToBoardsBtn" class="btn">Boards</button>
+          <strong id="welcomeText"></strong>
+          <button id="logoutBtn" class="btn">Logout</button>
+        </div>
+
+        <div class="center-group">
+          <strong id="activeBoardTitle"></strong>
+          <button id="copyBoardLinkBtn" class="btn">Copy Link</button>
+          <button id="saveBoardBtn" class="btn primary">Save</button>
+        </div>
+
+        <div class="right-group">
+          <button id="undoBtn" class="btn">Undo</button>
+          <button id="redoBtn" class="btn">Redo</button>
+          <button id="clearDrawingsBtn" class="btn danger">Clear Ink</button>
+          <label class="upload btn">
+            Upload Image/PDF
+            <input id="fileInput" type="file" accept=".gif,.png,.webp,.jpg,.jpeg,.pdf,application/pdf" multiple hidden>
+          </label>
+          <label class="inline-control">
+            3D Shape
+            <select id="shapeTypeSelect">
+              <option value="cube">Куб (Cube)</option>
+              <option value="prism">Призма (Prism)</option>
+              <option value="pyramid">Пирамида (Pyramid)</option>
+              <option value="parallelepiped">Параллелепипед</option>
+              <option value="cylinder">Цилиндр (Cylinder)</option>
+              <option value="cone">Конус (Cone)</option>
+              <option value="sphere">Сфера (Sphere)</option>
+            </select>
+          </label>
+          <button id="addShape3dBtn" class="btn primary">Add 3D</button>
+          <button id="addStickyBtn" class="btn">Add Sticky</button>
+          <button id="resetViewBtn" class="btn">Reset View</button>
+        </div>
+      </header>
+
+      <div class="hint">Draw mode is primary. Ink with mouse/tablet pen. Hold Space and drag (or middle mouse) to pan. Wheel zoom scales board and grid. Ctrl+Z / Ctrl+Y for undo/redo.</div>
+
+      <div id="boardViewport">
+        <div id="boardInner"></div>
+        <div id="presenceLayer"></div>
+        <div id="dropOverlay" class="drop-overlay hidden">Drop images/PDF here</div>
+      </div>
+
+      <footer class="statusbar">
+        <span id="statusText">Ready.</span>
+        <span id="debugCoords">X: -, Y: -</span>
+      </footer>
+    </section>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
