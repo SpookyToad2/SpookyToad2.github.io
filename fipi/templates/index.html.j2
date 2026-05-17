@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Хаб Практики ФИПИ</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #f8fafc;
+      --surface: #ffffff;
+      --text: #1a1f24;
+      --muted: #56606d;
+      --line: #d9e1ea;
+      --accent: #005f86;
+      --accent-soft: #e9f3f8;
+      --warn: #7a4e00;
+      --warn-bg: #f7efe0;
+    }
+    html[data-theme="dark"] {
+      --bg: #101419;
+      --panel: #151b22;
+      --surface: #11171d;
+      --text: #ecf1f7;
+      --muted: #a8b3bf;
+      --line: #2a3440;
+      --accent: #4fb2d9;
+      --accent-soft: #173241;
+      --warn: #ffbf7c;
+      --warn-bg: #3a2a16;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", Tahoma, sans-serif; line-height: 1.42; }
+    .shell { max-width: 1360px; margin: 0 auto; padding: 14px; }
+    .toolbar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 0 12px; }
+    .title { margin: 0 14px 0 0; font-size: 18px; letter-spacing: .02em; }
+    .btn, .pick, .select {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 0;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn { padding: 8px 12px; }
+    .pick { min-width: 34px; padding: 6px 8px; font-weight: 700; }
+    .select { padding: 7px 10px; }
+    .btn.active, .pick.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .variant-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .spacer { flex: 1; }
+    .section { margin-top: 14px; }
+    .section h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: .02em; }
+    .sub { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+    .grid { display: grid; gap: 12px; }
+    .card { border: 1px solid var(--line); background: var(--surface); border-radius: 0; padding: 12px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; align-items: center; }
+    .tag { border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; padding: 3px 8px; border-radius: 0; }
+    .tag.warn { color: var(--warn); border-color: #c79a69; background: var(--warn-bg); }
+    .task { overflow-x: auto; }
+    .task .qblock { border: 0; margin: 0; padding: 0; background: transparent; }
+    .task td[bgcolor="#FAFBCA"], .task td[bgcolor="#fafbca"] { background: color-mix(in srgb, var(--panel) 88%, var(--accent-soft) 12%) !important; }
+    .task td[bgcolor="#FFFFFF"], .task td[bgcolor="#ffffff"] { background: var(--surface) !important; }
+    .task table[bgcolor="gray"], .task table[bgcolor="#808080"], .task table[bgcolor="#808080;"] { background: var(--line) !important; }
+    .slots { display: grid; gap: 10px; }
+    .slot { border: 1px solid var(--line); background: var(--bg); padding: 10px; border-radius: 0; }
+    .task-head {
+      display: inline-block;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+      margin-bottom: 8px;
+      padding-bottom: 2px;
+    }
+    .variant-head {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      text-transform: none;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 10px;
+      padding-bottom: 1px;
+    }
+    .hidden { display: none; }
+    .variant-picker .pick {
+      min-width: 30px;
+      padding: 5px 7px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+    }
+    .variant-picker .pick.active {
+      color: var(--text);
+      border-color: var(--line);
+      background: var(--panel);
+    }
+  </style>
+  {% if render_links %}
+  {% for href in render_links %}
+  <link rel="stylesheet" href="{{ href }}" />
+  {% endfor %}
+  {% endif %}
+  {% if render_css %}
+  <style>{{ render_css | safe }}</style>
+  {% endif %}
+</head>
+<body>
+  <div class="shell">
+    <div class="toolbar">
+      <h1 class="title">Хаб Практики ФИПИ</h1>
+      <button class="btn active" id="mode-practice">Практика По Номеру</button>
+      <button class="btn" id="mode-variants">Варианты Экзамена</button>
+      <button class="btn" id="mode-experimental">Экспериментальные Задачи</button>
+      <div class="picker" id="task-picker">
+        {% for n in range(1, 20) %}
+        <button class="pick{% if n == 1 %} active{% endif %}" data-task-number="{{ n }}">{{ n }}</button>
+        {% endfor %}
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="theme-toggle">Темная Тема</button>
+    </div>
+
+    <section id="practice-view" class="section">
+      {% for n in range(1, 20) %}
+      <div class="practice-group{% if n != 1 %} hidden{% endif %}" data-practice-number="{{ n }}">
+        <h2>Задание {{ n }}</h2>
+        <p class="sub">Точечная практика по одному номеру экзамена.</p>
+        <div class="grid">
+          {% set arr = hub.practice_pool[n] %}
+          {% if arr %}
+            {% for m in arr %}
+            <article class="card">
+              <div class="task-head">Задание {{ n }}</div>
+              <div class="meta"><span class="tag">ID: {{ m.fipi_task.task_id }}</span><span class="tag">Схожесть: {{ m.similarity }}</span></div>
+              <div class="task">{{ m.fipi_task.html | safe }}</div>
+            </article>
+            {% endfor %}
+          {% else %}
+            <article class="card"><div class="meta"><span class="tag warn">BLANK</span></div><div>Нет задач этого номера в текущем пуле.</div></article>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section id="variants-view" class="section hidden">
+      <h2>Варианты Экзамена</h2>
+      <p class="sub">Показываются только полные варианты, где есть все 19 заданий.</p>
+      <div class="variant-picker" id="variant-picker">
+        {% if hub.variants %}
+          {% for v in hub.variants %}
+          <button class="pick{% if loop.index0 == 0 %} active{% endif %}" data-variant-number="{{ loop.index0 }}">{{ loop.index }}</button>
+          {% endfor %}
+        {% endif %}
+        <span class="tag">Полных Вариантов: {{ hub.full_variant_count }}</span>
+      </div>
+      <div class="grid">
+        {% if hub.variants %}
+          {% for v in hub.variants %}
+          <article class="card variant-card{% if loop.index0 != 0 %} hidden{% endif %}" data-variant-index="{{ loop.index0 }}">
+            <div class="variant-head">{{ v.name }}</div>
+            <div class="slots">
+              {% for s in v.slots %}
+              <section class="slot">
+                <div class="task-head">Задание {{ s.task_num }}</div>
+                <div class="meta"><span class="tag">ID: {{ s.item.fipi_task.task_id }}</span><span class="tag">Схожесть: {{ s.item.similarity }}</span></div>
+                <div class="task">{{ s.item.fipi_task.html | safe }}</div>
+              </section>
+              {% endfor %}
+            </div>
+          </article>
+          {% endfor %}
+        {% else %}
+          <article class="card"><div class="meta"><span class="tag warn">BLANK</span></div><div>Полных вариантов пока нет.</div></article>
+        {% endif %}
+      </div>
+    </section>
+
+<section id="experimental-view" class="section hidden">
+      <h2>Экспериментальные Задачи</h2>
+      <p class="sub">Это остатки: задачи, которые не удалось уложить в полные варианты по 19 заданий.</p>
+      <div class="picker" id="experimental-picker">
+        {% for n in range(1, 20) %}
+        <button class="pick{% if n == 1 %} active{% endif %}" data-experimental-number="{{ n }}">{{ n }}</button>
+        {% endfor %}
+      </div>
+      <div class="grid" id="experimental-grid">
+        {% for n in range(1, 20) %}
+        <div class="experimental-group{% if n != 1 %} hidden{% endif %}" data-experimental-number="{{ n }}">
+          {% set arr = hub.leftovers_pool[n] %}
+          {% if arr %}
+            {% for m in arr %}
+            <article class="card">
+              <div class="task-head">Задание {{ m.exam_task_number if m.exam_task_number else "?" }}</div>
+              <div class="meta"><span class="tag">ID: {{ m.fipi_task.task_id }}</span><span class="tag warn">{{ m.similarity_status }}</span><span class="tag">Схожесть: {{ m.similarity }}</span></div>
+              <div class="task">{{ m.fipi_task.html | safe }}</div>
+            </article>
+            {% endfor %}
+          {% else %}
+            <article class="card"><div class="meta"><span class="tag warn">BLANK</span></div><div>Нет экспериментальных задач этого номера.</div></article>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const modePracticeBtn = document.getElementById("mode-practice");
+    const modeVariantsBtn = document.getElementById("mode-variants");
+    const modeExperimentalBtn = document.getElementById("mode-experimental");
+    const practiceView = document.getElementById("practice-view");
+    const variantsView = document.getElementById("variants-view");
+    const experimentalView = document.getElementById("experimental-view");
+    const picker = document.getElementById("task-picker");
+    const themeBtn = document.getElementById("theme-toggle");
+    const variantPicker = document.getElementById("variant-picker");
+    const root = document.documentElement;
+
+    function setMode(mode) {
+      const isPractice = mode === "practice";
+      const isVariants = mode === "variants";
+      const isExperimental = mode === "experimental";
+      practiceView.classList.toggle("hidden", !isPractice);
+      variantsView.classList.toggle("hidden", !isVariants);
+      experimentalView.classList.toggle("hidden", !isExperimental);
+      picker.classList.toggle("hidden", !isPractice);
+      modePracticeBtn.classList.toggle("active", isPractice);
+      modeVariantsBtn.classList.toggle("active", isVariants);
+      modeExperimentalBtn.classList.toggle("active", isExperimental);
+    }
+
+    function setPracticeNumber(n) {
+      document.querySelectorAll(".practice-group").forEach(el => {
+        el.classList.toggle("hidden", el.dataset.practiceNumber !== String(n));
+      });
+      document.querySelectorAll(".pick").forEach(el => {
+        el.classList.toggle("active", el.dataset.taskNumber === String(n));
+      });
+    }
+
+    function setVariant(index) {
+      document.querySelectorAll(".variant-card").forEach(el => {
+        el.classList.toggle("hidden", el.dataset.variantIndex !== String(index));
+      });
+      if (variantPicker) {
+        variantPicker.querySelectorAll(".pick[data-variant-number]").forEach(el => {
+          el.classList.toggle("active", el.dataset.variantNumber === String(index));
+        });
+      }
+    }
+
+    function setExperimentalNumber(n) {
+      document.querySelectorAll(".experimental-group").forEach(el => {
+        el.classList.toggle("hidden", el.dataset.experimentalNumber !== String(n));
+      });
+      document.querySelectorAll(".pick[data-experimental-number]").forEach(el => {
+        el.classList.toggle("active", el.dataset.experimentalNumber === String(n));
+      });
+    }
+
+    function setTheme(theme) {
+      root.setAttribute("data-theme", theme);
+      themeBtn.textContent = theme === "dark" ? "Светлая Тема" : "Темная Тема";
+      localStorage.setItem("fipi_theme", theme);
+    }
+
+    modePracticeBtn.addEventListener("click", () => setMode("practice"));
+    modeVariantsBtn.addEventListener("click", () => setMode("variants"));
+    modeExperimentalBtn.addEventListener("click", () => setMode("experimental"));
+    document.querySelectorAll(".pick[data-task-number]").forEach(btn => {
+      btn.addEventListener("click", () => setPracticeNumber(btn.dataset.taskNumber));
+    });
+    document.querySelectorAll(".pick[data-variant-number]").forEach(btn => {
+      btn.addEventListener("click", () => setVariant(btn.dataset.variantNumber));
+    });
+    document.querySelectorAll(".pick[data-experimental-number]").forEach(btn => {
+      btn.addEventListener("click", () => setExperimentalNumber(btn.dataset.experimentalNumber));
+    });
+    themeBtn.addEventListener("click", () => {
+      const now = root.getAttribute("data-theme") || "light";
+      setTheme(now === "light" ? "dark" : "light");
+    });
+
+    const savedTheme = localStorage.getItem("fipi_theme");
+    if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme); else setTheme("light");
+    setVariant(0);
+  </script>
+</body>
+</html>
