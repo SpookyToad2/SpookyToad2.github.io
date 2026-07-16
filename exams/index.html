@@ -151,7 +151,7 @@
             position: absolute;
             left: 0;
             right: 0;
-            top: 18%; /* Установили значение по умолчанию 18% */
+            top: 18%; /* По умолчанию 18% */
             border-top: 2px dashed #ff453a;
             pointer-events: none; /* Пропускает клики сквозь себя */
             z-index: 10;
@@ -298,6 +298,12 @@
         const syncTopic = `global-live-text-sync/${cleanUrl}`;
         const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
 
+        // Функция форматирования текста для предотвращения переноса концевых пробелов
+        function preventTrailingSpaceWrap(text) {
+            // Заменяем все пробелы на конце строк на неразрывные пробелы (\u00A0)
+            return text.replace(/ +$/gm, match => '\u00A0'.repeat(match.length));
+        }
+
         if (!isMobile) {
             // ==========================================
             // ЛОГИКА ДЛЯ ПК
@@ -326,6 +332,7 @@
                 statusDot.classList.add('connected');
                 statusText.innerText = "Подключено глобально! Всё готово к трансляции.";
                 publishText(textarea.value);
+                updatePreview(textarea.value);
             });
 
             client.on('close', () => {
@@ -339,21 +346,24 @@
                 }
             }
 
-            // Обработка ввода
-            textarea.addEventListener('input', (e) => {
-                const text = e.target.value;
-                publishText(text);
-
-                // Синхронный рендер в симулятор на ПК
+            function updatePreview(text) {
                 if (text.trim() === "") {
                     previewStatusEl.classList.remove('hidden');
                     previewTextEl.classList.add('hidden');
                 } else {
                     previewStatusEl.classList.add('hidden');
                     previewTextEl.classList.remove('hidden');
-                    previewTextEl.innerText = text;
+                    // Безопасное форматирование перед вставкой
+                    previewTextEl.innerText = preventTrailingSpaceWrap(text);
                     fitPreviewText();
                 }
+            }
+
+            // Обработка ввода
+            textarea.addEventListener('input', (e) => {
+                const text = e.target.value;
+                publishText(text);
+                updatePreview(text);
             });
 
             // Математический рендер симулятора (копия мобильного движка)
@@ -368,7 +378,7 @@
                 const maxH = previewScreen.clientHeight - paddingY;
 
                 let min = 10;
-                let max = 180; // Тот же лимит шрифта, что и на телефоне
+                let max = 180;
                 let bestFit = 10;
 
                 previewTextEl.style.fontSize = '10px';
@@ -403,14 +413,14 @@
                 btnPortrait.classList.add('active');
                 btnLandscape.classList.remove('active');
                 previewScreen.classList.remove('landscape');
-                setTimeout(fitPreviewText, 310); // Ждем окончания CSS transition
+                setTimeout(fitPreviewText, 310);
             });
 
             btnLandscape.addEventListener('click', () => {
                 btnLandscape.classList.add('active');
                 btnPortrait.classList.remove('active');
                 previewScreen.classList.add('landscape');
-                setTimeout(fitPreviewText, 310); // Ждем окончания CSS transition
+                setTimeout(fitPreviewText, 310);
             });
 
             // Логика слайдера-ограничителя
@@ -452,7 +462,8 @@
                     } else {
                         phoneStatusEl.classList.add('hidden');
                         liveTextEl.classList.remove('hidden');
-                        liveTextEl.innerText = text;
+                        // Безопасное форматирование на мобильном
+                        liveTextEl.innerText = preventTrailingSpaceWrap(text);
                         fitText();
                     }
                 }
