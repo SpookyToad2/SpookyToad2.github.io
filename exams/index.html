@@ -3,216 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Text Display</title>
-    <!-- PeerJS for real-time peer-to-peer connection -->
+    <title>Live Text Sync</title>
+    <!-- PeerJS for direct, serverless browser-to-browser connection -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- QRCode.js for easy mobile scanning -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0b0f;
             color: #ffffff;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* Utility class to toggle views */
         .hidden { display: none !important; }
 
-        /* --- Host (PC) Styles --- */
-        #host-view {
+        /* --- PC Interface --- */
+        #pc-view {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
-            height: 100%;
-            box-sizing: border-box;
+            justify-content: center;
+            width: 90%;
+            max-width: 900px;
+            height: 80%;
+        }
+        h2 {
+            margin-bottom: 5px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+        #status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #8a8a93;
+            margin-bottom: 25px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ff453a; /* Red: disconnected */
+            box-shadow: 0 0 8px #ff453a;
+        }
+        .dot.connected {
+            background-color: #30d158; /* Green: connected */
+            box-shadow: 0 0 8px #30d158;
         }
         textarea {
             width: 100%;
-            max-width: 800px;
-            height: 200px;
-            font-size: 24px;
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid #333;
-            background: #1e1e1e;
+            flex-grow: 1;
+            font-size: 20px;
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid #2c2c2e;
+            background: #1c1c1e;
             color: white;
             resize: none;
-            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: border-color 0.2s;
         }
-        textarea:focus { outline: none; border-color: #4CAF50; }
-        .instructions {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        #qrcode {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        #share-link {
-            color: #4CAF50;
-            text-decoration: none;
-            word-break: break-all;
-            max-width: 600px;
-            text-align: center;
+        textarea:focus {
+            outline: none;
+            border-color: #0a84ff;
         }
 
-        /* --- Receiver (Mobile) Styles --- */
-        #receiver-view {
+        /* --- Phone Interface --- */
+        #phone-view {
             display: flex;
             justify-content: center;
             align-items: center;
             width: 100vw;
             height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
         }
         #live-text {
             white-space: pre-wrap;
             text-align: center;
+            font-weight: 600;
             line-height: 1.1;
-            /* Font size is handled dynamically by JS */
+            width: 100%;
         }
     </style>
 </head>
 <body>
 
-    <!-- HOST VIEW (Shown on PC) -->
-    <div id="host-view" class="hidden">
+    <!-- PC WRITER VIEW -->
+    <div id="pc-view" class="hidden">
         <h2>Live Text Broadcaster</h2>
-        <textarea id="text-input" placeholder="Type something here..."></textarea>
-        
-        <div class="instructions">
-            <p>Scan this QR code with your phone, or open the link below:</p>
+        <div id="status-indicator">
+            <div class="dot" id="status-dot"></div>
+            <span id="status-text">Waiting for phone to open this website...</span>
         </div>
-        <div id="qrcode"></div>
-        <a id="share-link" href="#" target="_blank">Generating link...</a>
-        <p id="status-text" style="color: #aaa; margin-top: 20px;">Waiting for connection...</p>
+        <textarea id="text-input" placeholder="Start typing here..."></textarea>
     </div>
 
-    <!-- RECEIVER VIEW (Shown on Phone) -->
-    <div id="receiver-view" class="hidden">
-        <span id="live-text">Connecting...</span>
+    <!-- PHONE READER VIEW -->
+    <div id="phone-view" class="hidden">
+        <span id="live-text">Syncing...</span>
     </div>
 
     <script>
-        // Check if the URL has a '?join=ID' parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const joinId = urlParams.get('join');
-        
-        const peer = new Peer(); // Initialize WebRTC
+        // 1. Smart Device Detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-        if (!joinId) {
+        // 2. Generate a globally unique, deterministic room ID based on your GitHub Pages URL
+        // This ensures your phone and PC connect ONLY to each other, with no collisions.
+        const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
+        const hostId = `${cleanUrl}-host`.substring(0, 80);
+
+        if (!isMobile) {
             // ==========================================
-            // HOST LOGIC (PC)
+            // PC (SENDER) LOGIC
             // ==========================================
-            document.getElementById('host-view').classList.remove('hidden');
-            let connections = [];
-            let currentText = "";
+            document.getElementById('pc-view').classList.remove('hidden');
+            const textarea = document.getElementById('text-input');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
 
-            peer.on('open', (id) => {
-                // Generate the link for the mobile device
-                const baseUrl = window.location.origin + window.location.pathname;
-                const joinUrl = `${baseUrl}?join=${id}`;
-                
-                document.getElementById('share-link').href = joinUrl;
-                document.getElementById('share-link').innerText = joinUrl;
+            // PC registers with the unique Host ID
+            const peer = new Peer(hostId);
+            let activeConnection = null;
 
-                // Generate QR Code
-                new QRCode(document.getElementById("qrcode"), {
-                    text: joinUrl,
-                    width: 200,
-                    height: 200,
-                });
+            peer.on('open', () => {
+                console.log("Broadcaster active. Waiting for receiver on ID:", hostId);
             });
 
-            // Listen for mobile devices connecting
+            // When the phone opens the page, it will connect to this PC
             peer.on('connection', (conn) => {
-                connections.push(conn);
-                document.getElementById('status-text').innerText = `Connected to ${connections.length} device(s)`;
-                document.getElementById('status-text').style.color = "#4CAF50";
+                activeConnection = conn;
+                statusDot.classList.add('connected');
+                statusText.innerText = "Phone connected! Sending live text.";
 
-                // Send the current text immediately upon connection
-                conn.on('open', () => {
-                    conn.send(currentText);
-                });
+                // Send current textarea value immediately on connect
+                conn.send(textarea.value);
 
                 conn.on('close', () => {
-                    connections = connections.filter(c => c !== conn);
-                    document.getElementById('status-text').innerText = `Connected to ${connections.length} device(s)`;
+                    statusDot.classList.remove('connected');
+                    statusText.innerText = "Phone disconnected. Ready to reconnect...";
+                    activeConnection = null;
                 });
             });
 
-            // Listen to typing and send to all connected devices
-            document.getElementById('text-input').addEventListener('input', (e) => {
-                currentText = e.target.value;
-                connections.forEach(conn => {
-                    if (conn.open) {
-                        conn.send(currentText);
-                    }
-                });
+            // Send text updates in real-time as you type
+            textarea.addEventListener('input', () => {
+                if (activeConnection && activeConnection.open) {
+                    activeConnection.send(textarea.value);
+                }
             });
 
         } else {
             // ==========================================
-            // RECEIVER LOGIC (Mobile)
+            // PHONE (RECEIVER) LOGIC
             // ==========================================
-            document.getElementById('receiver-view').classList.remove('hidden');
+            document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
 
+            const peer = new Peer(); // Let peer assign a random ID to the phone
+            let connection = null;
+
+            function connectToPC() {
+                liveTextEl.innerText = "Searching for PC...";
+                liveTextEl.style.color = "#8a8a93";
+                liveTextEl.style.fontSize = "24px";
+
+                connection = peer.connect(hostId);
+
+                connection.on('open', () => {
+                    liveTextEl.innerText = "Connected! Write on your PC.";
+                    liveTextEl.style.color = "#ffffff";
+                    fitText();
+                });
+
+                connection.on('data', (data) => {
+                    liveTextEl.innerText = data || " ";
+                    fitText(); // Instantly calculate perfect font size
+                });
+
+                connection.on('close', () => {
+                    // If PC disconnects, try to reconnect every 2 seconds
+                    setTimeout(connectToPC, 2000);
+                });
+            }
+
             peer.on('open', () => {
-                // Connect to the host using the ID from the URL
-                const conn = peer.connect(joinId);
-
-                conn.on('open', () => {
-                    liveTextEl.innerText = "Connected! Waiting for text...";
-                    fitText();
-                });
-
-                // Receive real-time text updates
-                conn.on('data', (data) => {
-                    liveTextEl.innerText = data;
-                    fitText(); // Resize immediately when text changes
-                });
-
-                conn.on('close', () => {
-                    liveTextEl.innerText = "Connection lost.";
-                    fitText();
-                });
+                connectToPC();
             });
 
-            // Mathematical function to find the maximum possible font size
+            peer.on('error', (err) => {
+                // If PC is not online yet, retry
+                if (err.type === 'peer-allowed-active-connections' || err.type === 'peer-unavailable') {
+                    setTimeout(connectToPC, 2000);
+                }
+            });
+
+            // Mathematical calculation to fit text perfectly on the screen
             function fitText() {
                 if (!liveTextEl.innerText) return;
 
                 let min = 10;
-                let max = 800; // Absolute max font size in pixels
+                let max = 600; // Cap max size to prevent insane stretching on brief words
                 let bestFit = 10;
 
-                // Binary search for the perfect font size
+                // Binary search algorithm to find the absolute maximum size
                 while (min <= max) {
                     let mid = Math.floor((min + max) / 2);
                     liveTextEl.style.fontSize = mid + 'px';
 
-                    // Check if it fits within 95% of the screen (leaving a small margin)
-                    if (liveTextEl.offsetWidth <= window.innerWidth * 0.95 && 
-                        liveTextEl.offsetHeight <= window.innerHeight * 0.95) {
+                    // Check boundaries against 92% of the screen limits
+                    if (liveTextEl.offsetWidth <= window.innerWidth * 0.92 && 
+                        liveTextEl.offsetHeight <= window.innerHeight * 0.92) {
                         bestFit = mid;
-                        min = mid + 1; // Try going bigger
+                        min = mid + 1; // It fits, try slightly larger
                     } else {
                         max = mid - 1; // It overflowed, go smaller
                     }
                 }
                 
-                // Apply the largest size that didn't overflow
                 liveTextEl.style.fontSize = bestFit + 'px';
             }
 
-            // Resize text if the phone is rotated
+            // Recalculate on screen rotation
             window.addEventListener('resize', fitText);
         }
     </script>
