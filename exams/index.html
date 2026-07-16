@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Text Sync</title>
-    <!-- MQTT over WebSockets for firewall-free global sync -->
+    <title>Синхронизация текста</title>
+    <!-- MQTT через WebSockets для надежной глобальной синхронизации без блокировок -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        /* Base page settings: No global flex-centering to prevent layout interference */
+        /* Базовые настройки страницы: убираем глобальное центрирование flex, чтобы не ломать верстку */
         body, html {
             margin: 0;
             padding: 0;
@@ -21,7 +21,7 @@
 
         .hidden { display: none !important; }
 
-        /* --- PC Interface --- */
+        /* --- Интерфейс для ПК --- */
         #pc-view {
             display: flex;
             flex-direction: column;
@@ -30,7 +30,7 @@
             width: 90%;
             max-width: 900px;
             height: 80%;
-            margin: 5% auto; /* Centers the interface on PC screens */
+            margin: 5% auto; /* Центрируем панель на экране ПК */
         }
         h2 {
             margin-bottom: 5px;
@@ -49,12 +49,12 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #ff453a; /* Red */
+            background-color: #ff453a; /* Красный (отключено) */
             box-shadow: 0 0 8px #ff453a;
             transition: background-color 0.3s, box-shadow 0.3s;
         }
         .dot.connected {
-            background-color: #30d158; /* Green */
+            background-color: #30d158; /* Зеленый (подключено) */
             box-shadow: 0 0 8px #30d158;
         }
         textarea {
@@ -75,15 +75,15 @@
             border-color: #0a84ff;
         }
 
-        /* --- Phone Interface --- */
+        /* --- Интерфейс для телефона --- */
         #phone-view {
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Strictly align items starting from the top */
-            align-items: center;        /* Keep text horizontally centered */
+            justify-content: flex-start; /* Прижимаем текст строго к верху */
+            align-items: center;        /* Центрируем текст по горизонтали */
             width: 100%;
-            height: 100%;               /* Using 100% height prevents mobile browser address bar layout shifts */
-            /* 40px top padding keeps text high while clearing notches/Dynamic Islands safely */
+            height: 100%;               /* Использование 100% высоты предотвращает баги с высотой на iOS/Android */
+            /* Отступ сверху 40px защищает текст от "челок", камер и системных строк */
             padding: 40px 20px 20px 20px; 
             box-sizing: border-box;
             overflow: hidden;
@@ -108,36 +108,37 @@
 </head>
 <body>
 
-    <!-- PC WRITER VIEW -->
+    <!-- ИНТЕРФЕЙС ДЛЯ ПК (ВВОД) -->
     <div id="pc-view" class="hidden">
-        <h2>Live Text Broadcaster</h2>
+        <h2>Трансляция текста</h2>
         <div id="status-indicator">
             <div class="dot" id="status-dot"></div>
-            <span id="status-text">Connecting to sync network...</span>
+            <span id="status-text">Подключение к сети синхронизации...</span>
         </div>
-        <textarea id="text-input" placeholder="Start typing here..."></textarea>
+        <textarea id="text-input" placeholder="Начните вводить текст здесь..."></textarea>
     </div>
 
-    <!-- PHONE READER VIEW -->
+    <!-- ИНТЕРФЕЙС ДЛЯ ТЕЛЕФОНА (ВЫВОД) -->
     <div id="phone-view" class="hidden">
-        <div id="phone-status">Connecting to sync network...</div>
+        <div id="phone-status">Подключение к сети синхронизации...</div>
         <span id="live-text" class="hidden"></span>
     </div>
 
     <script>
-        // 1. Smart Device Detection
+        // 1. Умное определение типа устройства
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-        // 2. Dynamic, Unique Room Channel based on your custom GitHub Pages URL.
+        // 2. Генерация уникального канала на основе ссылки вашего GitHub Pages.
+        // Это гарантирует, что ваши устройства соединятся только друг с другом.
         const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
         const syncTopic = `global-live-text-sync/${cleanUrl}`;
 
-        // Public secure WebSockets broker
+        // Надежный публичный WebSockets брокер от EMQX
         const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
 
         if (!isMobile) {
             // ==========================================
-            // PC (SENDER) LOGIC
+            // ЛОГИКА ДЛЯ ПК (ОТПРАВИТЕЛЬ)
             // ==========================================
             document.getElementById('pc-view').classList.remove('hidden');
             const textarea = document.getElementById('text-input');
@@ -153,17 +154,18 @@
 
             client.on('connect', () => {
                 statusDot.classList.add('connected');
-                statusText.innerText = "Connected globally! Anything you type here is live on your phone.";
+                statusText.innerText = "Подключено! Всё, что вы здесь пишете, мгновенно отображается на телефоне.";
                 publishText(textarea.value);
             });
 
             client.on('close', () => {
                 statusDot.classList.remove('connected');
-                statusText.innerText = "Reconnecting to server...";
+                statusText.innerText = "Переподключение к серверу...";
             });
 
             function publishText(text) {
                 if (client.connected) {
+                    // retain: true сохраняет последнее сообщение на сервере, чтобы телефон сразу его загрузил при открытии
                     client.publish(syncTopic, text || " ", { qos: 1, retain: true });
                 }
             }
@@ -174,7 +176,7 @@
 
         } else {
             // ==========================================
-            // PHONE (RECEIVER) LOGIC
+            // ЛОГИКА ДЛЯ ТЕЛЕФОНА (ПОЛУЧАТЕЛЬ)
             // ==========================================
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
@@ -189,7 +191,7 @@
             });
 
             client.on('connect', () => {
-                phoneStatusEl.innerText = "Connected! Write on your PC.";
+                phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
                 client.subscribe(syncTopic, { qos: 1 });
             });
 
@@ -199,69 +201,69 @@
                     
                     if (text.trim() === "") {
                         phoneStatusEl.classList.remove('hidden');
-                        phoneStatusEl.innerText = "Connected! Write on your PC.";
+                        phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
                         liveTextEl.classList.add('hidden');
                     } else {
                         phoneStatusEl.classList.add('hidden');
                         liveTextEl.classList.remove('hidden');
                         liveTextEl.innerText = text;
-                        fitText(); // Scale instantly
+                        fitText(); // Мгновенный расчет размера
                     }
                 }
             });
 
             client.on('close', () => {
                 phoneStatusEl.classList.remove('hidden');
-                phoneStatusEl.innerText = "Connecting to sync network...";
+                phoneStatusEl.innerText = "Подключение к сети...";
                 liveTextEl.classList.add('hidden');
             });
 
-            // The dynamic mathematical fitting engine
+            // Математический движок подстройки размера текста под экран
             function fitText() {
                 if (!liveTextEl.innerText || liveTextEl.classList.contains('hidden')) return;
 
-                // Dynamically read CSS padding to calculate safe text bounds
+                // Считываем текущие отступы (padding) контейнера для точных расчетов границ
                 const style = window.getComputedStyle(phoneViewEl);
                 const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
                 const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
 
-                // Safe boundaries (viewport dimensions minus safety paddings)
+                // Безопасные границы для текста
                 const maxW = phoneViewEl.clientWidth - paddingX;
                 const maxH = phoneViewEl.clientHeight - paddingY;
 
                 let min = 10;
-                let max = 180; // Hard cap on size keeps short text at a clean, massive top size without filling the screen height
+                let max = 180; // Максимальный лимит шрифта, чтобы короткие слова не растягивались на весь экран по высоте
                 let bestFit = 10;
 
-                // Reset temporary layout parameters to get a clean visual calculation
+                // Сброс временных параметров для точного замера браузером размеров текста
                 liveTextEl.style.fontSize = '10px';
                 liveTextEl.style.display = 'inline-block';
                 liveTextEl.style.width = 'auto';
                 liveTextEl.style.maxWidth = maxW + 'px';
 
-                // Binary search to find the exact boundary threshold
+                // Бинарный поиск оптимального размера шрифта
                 while (min <= max) {
                     let mid = Math.floor((min + max) / 2);
                     liveTextEl.style.fontSize = mid + 'px';
 
-                    // Check both physical box boundaries and text content scrolling space
+                    // Проверяем физические границы элемента и появление скроллов
                     const fitsWidth = liveTextEl.offsetWidth <= maxW && liveTextEl.scrollWidth <= maxW;
                     const fitsHeight = liveTextEl.offsetHeight <= maxH && liveTextEl.scrollHeight <= maxH;
 
                     if (fitsWidth && fitsHeight) {
                         bestFit = mid;
-                        min = mid + 1; // It fits! Try a larger size
+                        min = mid + 1; // Текст поместился, пробуем сделать больше
                     } else {
-                        max = mid - 1; // Overflowed, dial it back
+                        max = mid - 1; // Вышли за границы, уменьшаем размер
                     }
                 }
 
-                // Apply the absolute maximum safe size
+                // Применяем максимально возможный безопасный размер
                 liveTextEl.style.fontSize = bestFit + 'px';
                 liveTextEl.style.maxWidth = maxW + 'px';
             }
 
-            // Recalculate size instantly when phone rotates
+            // Пересчитываем размер шрифта при перевороте экрана телефона
             window.addEventListener('resize', fitText);
         }
     </script>
