@@ -13,8 +13,8 @@
             width: 100%;
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #ffffff; /* Белый фон страницы */
-            color: #000000; /* Чёрный текст */
+            background-color: #0b0b0f;
+            color: #ffffff;
             overflow: hidden;
         }
 
@@ -50,20 +50,20 @@
             align-items: center;
             gap: 8px;
             font-size: 14px;
-            color: #636366; /* Тёмно-серый для хорошей читаемости */
+            color: #8a8a93;
             margin-bottom: 20px;
         }
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #ff3b30; /* Красный */
-            box-shadow: 0 0 6px #ff3b30;
+            background-color: #ff453a; /* Красный */
+            box-shadow: 0 0 8px #ff453a;
             transition: background-color 0.3s, box-shadow 0.3s;
         }
         .dot.connected {
-            background-color: #34c759; /* Зеленый */
-            box-shadow: 0 0 6px #34c759;
+            background-color: #30d158; /* Зеленый */
+            box-shadow: 0 0 8px #30d158;
         }
         textarea {
             width: 100%;
@@ -71,17 +71,17 @@
             font-size: 18px;
             padding: 20px;
             border-radius: 14px;
-            border: 1px solid #d1d1d6; /* Светлая граница */
-            background: #f2f2f7; /* Светло-серый фон поля */
-            color: #000000; /* Чёрный текст */
+            border: 1px solid #2c2c2e;
+            background: #1c1c1e;
+            color: white;
             resize: none;
             box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* Очень мягкая тень */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             transition: border-color 0.2s;
         }
         textarea:focus {
             outline: none;
-            border-color: #007aff; /* Синий фокус */
+            border-color: #0a84ff;
         }
 
         /* Правая колонка: Интерактивный предпросмотр */
@@ -90,16 +90,16 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #f2f2f7; /* Светлый фон панели */
+            background: #1c1c1e;
             padding: 25px;
             border-radius: 20px;
-            border: 1px solid #e5e5ea;
+            border: 1px solid #2c2c2e;
             min-width: 400px;
         }
         .preview-title {
             font-size: 16px;
             font-weight: 500;
-            color: #636366;
+            color: #8a8a93;
             margin-bottom: 15px;
         }
         
@@ -108,10 +108,10 @@
             position: relative;
             width: 280px; /* Изначально портретный режим */
             height: 480px;
-            background: #ffffff; /* Белый экран телефона */
-            border: 8px solid #1c1c1e; /* Тёмная рамка телефона для реалистичности */
+            background: #000000;
+            border: 8px solid #2c2c2e;
             border-radius: 36px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.12); /* Мягкая тень */
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -131,7 +131,7 @@
 
         #preview-status {
             font-size: 14px;
-            color: #8e8e93; /* Светло-серый текст ожидания */
+            color: #48484a;
             text-align: center;
             margin-top: 40%;
         }
@@ -144,7 +144,6 @@
             line-height: 1.15;
             word-break: normal;
             overflow-wrap: normal;
-            color: #000000; /* Чёрный текст в превью */
         }
 
         /* Линия безопасной зоны (Горизонтальный ограничитель) */
@@ -153,7 +152,7 @@
             left: 0;
             right: 0;
             top: 18%; /* По умолчанию 18% */
-            border-top: 2px dashed #ff3b30; /* Красная линия */
+            border-top: 2px dashed #ff453a;
             pointer-events: none; /* Пропускает клики сквозь себя */
             z-index: 10;
         }
@@ -172,9 +171,9 @@
             justify-content: center;
         }
         .toggle-btn {
-            background: #e5e5ea; /* Светлая кнопка */
+            background: #2c2c2e;
             border: none;
-            color: #48484a;
+            color: #8a8a93;
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
@@ -182,7 +181,7 @@
             transition: all 0.2s;
         }
         .toggle-btn.active {
-            background: #007aff; /* Синяя активная кнопка */
+            background: #0a84ff;
             color: #ffffff;
             font-weight: 500;
         }
@@ -191,7 +190,7 @@
             flex-direction: column;
             gap: 5px;
             font-size: 12px;
-            color: #636366;
+            color: #8a8a93;
         }
         .slider-header {
             display: flex;
@@ -199,12 +198,12 @@
         }
         input[type="range"] {
             width: 100%;
-            accent-color: #007aff; /* Синий ползунок */
+            accent-color: #0a84ff;
             cursor: pointer;
         }
         .safety-tip {
             font-size: 11px;
-            color: #ff3b30; /* Красная подсказка */
+            color: #ff453a;
             margin-top: 4px;
             font-weight: 500;
             text-align: left;
@@ -221,11 +220,10 @@
             padding: 40px 20px 20px 20px; 
             box-sizing: border-box;
             overflow: hidden;
-            background-color: #ffffff; /* Белый фон на реальном телефоне */
         }
         #phone-status {
             font-size: 18px;
-            color: #8e8e93;
+            color: #8a8a93;
             text-align: center;
             padding: 20px;
         }
@@ -238,7 +236,6 @@
             line-height: 1.15;
             word-break: normal;
             overflow-wrap: normal;
-            color: #000000; /* Чёрный крупный текст на телефоне */
         }
 
         /* Адаптация ПК-версии под маленькие экраны ноутбуков */
@@ -349,7 +346,7 @@
 
             client.on('close', () => {
                 statusDot.classList.remove('connected');
-                statusText.innerText = "Сонединение потеряно. Переподключение...";
+                statusText.innerText = "Соединение потеряно. Переподключение...";
             });
 
             function publishText(text) {
