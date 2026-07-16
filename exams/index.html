@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Text Sync</title>
-    <!-- MQTT over WebSockets for flawless, firewall-free global sync -->
+    <!-- MQTT over WebSockets for firewall-free global sync -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body, html {
@@ -82,16 +82,24 @@
             align-items: center;
             width: 100vw;
             height: 100vh;
-            padding: 15px;
+            padding: 0;
             box-sizing: border-box;
+            overflow: hidden;
+        }
+        #phone-status {
+            font-size: 18px;
+            color: #8a8a93;
+            text-align: center;
+            padding: 20px;
         }
         #live-text {
             white-space: pre-wrap;
             text-align: center;
             font-weight: 600;
             line-height: 1.15;
-            width: 100%;
-            word-break: break-word;
+            /* Prevent browser from forcing ugly breaks in the middle of words */
+            word-break: normal;
+            overflow-wrap: normal;
         }
     </style>
 </head>
@@ -109,7 +117,8 @@
 
     <!-- PHONE READER VIEW -->
     <div id="phone-view" class="hidden">
-        <span id="live-text">Connecting...</span>
+        <div id="phone-status">Connecting to sync network...</div>
+        <span id="live-text" class="hidden"></span>
     </div>
 
     <script>
@@ -117,11 +126,10 @@
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
         // 2. Dynamic, Unique Room Channel based on your custom GitHub Pages URL.
-        // This ensures your PC and phone link only to each other, without interfering with anyone else.
         const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
         const syncTopic = `global-live-text-sync/${cleanUrl}`;
 
-        // Using EMQX's ultra-reliable, public secure WebSockets broker
+        // Public secure WebSockets broker
         const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
 
         if (!isMobile) {
@@ -143,8 +151,6 @@
             client.on('connect', () => {
                 statusDot.classList.add('connected');
                 statusText.innerText = "Connected globally! Anything you type here is live on your phone.";
-                
-                // Publish current text on startup (retained, so phone grabs it immediately)
                 publishText(textarea.value);
             });
 
@@ -155,7 +161,6 @@
 
             function publishText(text) {
                 if (client.connected) {
-                    // retain: true saves the message on the server, serving it instantly to the phone when it connects
                     client.publish(syncTopic, text || " ", { qos: 1, retain: true });
                 }
             }
@@ -170,6 +175,7 @@
             // ==========================================
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
+            const phoneStatusEl = document.getElementById('phone-status');
 
             const client = mqtt.connect(brokerUrl, {
                 clientId: 'phone_' + Math.random().toString(16).substr(2, 8),
@@ -179,50 +185,73 @@
             });
 
             client.on('connect', () => {
-                liveTextEl.innerText = "Connected! Waiting for typing...";
-                liveTextEl.style.fontSize = "24px";
-                
+                phoneStatusEl.innerText = "Connected! Write on your PC.";
                 client.subscribe(syncTopic, { qos: 1 });
             });
 
             client.on('message', (topic, message) => {
                 if (topic === syncTopic) {
                     const text = message.toString();
-                    liveTextEl.innerText = text;
-                    fitText(); // Instantly scale up font size
+                    
+                    if (text.trim() === "") {
+                        phoneStatusEl.classList.remove('hidden');
+                        phoneStatusEl.innerText = "Connected! Write on your PC.";
+                        liveTextEl.classList.add('hidden');
+                    } else {
+                        phoneStatusEl.classList.add('hidden');
+                        liveTextEl.classList.remove('hidden');
+                        liveTextEl.innerText = text;
+                        fitText(); // Scale instantly
+                    }
                 }
             });
 
             client.on('close', () => {
-                liveTextEl.innerText = "Connecting to sync network...";
-                liveTextEl.style.fontSize = "24px";
+                phoneStatusEl.classList.remove('hidden');
+                phoneStatusEl.innerText = "Connecting to sync network...";
+                liveTextEl.classList.add('hidden');
             });
 
-            // The mathematical fitting engine
+            // The flawless mathematical fitting engine
             function fitText() {
-                if (!liveTextEl.innerText) return;
+                if (!liveTextEl.innerText || liveTextEl.classList.contains('hidden')) return;
 
-                let min = 10;
-                let max = 600; // Limits font from growing into abstract art for short words
-                let bestFit = 10;
+                const maxW = window.innerWidth * 0.90; // Allow 5% margin on left/right
+                const maxH = window.innerHeight * 0.90; // Allow 5% margin on top/bottom
 
+                let min = 5;
+                let max = 400; // Cap max font size (prevents single letters from being giant)
+                let bestFit = 5;
+
+                // Reset layout parameters to measure text wrapping and overflow boundaries accurately
+                liveTextEl.style.fontSize = '10px';
+                liveTextEl.style.display = 'inline-block';
+                liveTextEl.style.width = 'auto';
+                liveTextEl.style.maxWidth = maxW + 'px';
+
+                // Binary search to find the exact boundary
                 while (min <= max) {
                     let mid = Math.floor((min + max) / 2);
                     liveTextEl.style.fontSize = mid + 'px';
 
-                    // Checks if text fits within 92% of the screen limits
-                    if (liveTextEl.offsetWidth <= window.innerWidth * 0.92 && 
-                        liveTextEl.offsetHeight <= window.innerHeight * 0.92) {
+                    // Check physical element size AND overflow content size
+                    const fitsWidth = liveTextEl.offsetWidth <= maxW && liveTextEl.scrollWidth <= maxW;
+                    const fitsHeight = liveTextEl.offsetHeight <= maxH && liveTextEl.scrollHeight <= maxH;
+
+                    if (fitsWidth && fitsHeight) {
                         bestFit = mid;
-                        min = mid + 1; // It fits! Let's try bigger
+                        min = mid + 1; // It fits! Try a larger size
                     } else {
                         max = mid - 1; // Overflowed, dial it back
                     }
                 }
-                
+
+                // Apply the absolute maximum safe size
                 liveTextEl.style.fontSize = bestFit + 'px';
+                liveTextEl.style.maxWidth = maxW + 'px';
             }
 
+            // Recalculate size instantly when phone rotates
             window.addEventListener('resize', fitText);
         }
     </script>
