@@ -146,13 +146,13 @@
             overflow-wrap: normal;
         }
 
-        /* Линия безопасной зоны (Ограничитель) */
+        /* Линия безопасной зоны (Горизонтальный ограничитель) */
         #safety-line {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 75%; /* Положение по умолчанию */
-            border-left: 2px dashed #ff453a;
+            left: 0;
+            right: 0;
+            top: 75%; /* Положение по умолчанию (по высоте) */
+            border-top: 2px dashed #ff453a;
             pointer-events: none; /* Пропускает клики сквозь себя */
             z-index: 10;
         }
@@ -260,7 +260,7 @@
             <div class="preview-title">Предпросмотр экрана телефона</div>
             
             <div id="preview-screen">
-                <!-- Вертикальная линия-ограничитель -->
+                <!-- Горизонтальная линия-ограничитель -->
                 <div id="safety-line"></div>
                 <div id="preview-status">Ожидание ввода...</div>
                 <span id="preview-text" class="hidden"></span>
@@ -276,7 +276,7 @@
                 <!-- Ползунок границы -->
                 <div class="slider-group">
                     <div class="slider-header">
-                        <span>Граница от левого края (Ограничитель):</span>
+                        <span>Линия ограничения высоты:</span>
                         <span id="slider-val">75%</span>
                     </div>
                     <input type="range" id="safety-slider" min="5" max="95" value="75">
@@ -416,7 +416,7 @@
             // Логика слайдера-ограничителя
             safetySlider.addEventListener('input', (e) => {
                 const percent = e.target.value;
-                safetyLine.style.left = percent + '%';
+                safetyLine.style.top = percent + '%';
                 sliderVal.innerText = percent + '%';
             });
 
