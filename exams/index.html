@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Text Sync</title>
-    <!-- PeerJS for direct, serverless browser-to-browser connection -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- MQTT over WebSockets for flawless, firewall-free global sync -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -49,11 +49,12 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #ff453a; /* Red: disconnected */
+            background-color: #ff453a; /* Red */
             box-shadow: 0 0 8px #ff453a;
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
         .dot.connected {
-            background-color: #30d158; /* Green: connected */
+            background-color: #30d158; /* Green */
             box-shadow: 0 0 8px #30d158;
         }
         textarea {
@@ -81,15 +82,16 @@
             align-items: center;
             width: 100vw;
             height: 100vh;
-            padding: 10px;
+            padding: 15px;
             box-sizing: border-box;
         }
         #live-text {
             white-space: pre-wrap;
             text-align: center;
             font-weight: 600;
-            line-height: 1.1;
+            line-height: 1.15;
             width: 100%;
+            word-break: break-word;
         }
     </style>
 </head>
@@ -100,24 +102,27 @@
         <h2>Live Text Broadcaster</h2>
         <div id="status-indicator">
             <div class="dot" id="status-dot"></div>
-            <span id="status-text">Waiting for phone to open this website...</span>
+            <span id="status-text">Connecting to sync network...</span>
         </div>
         <textarea id="text-input" placeholder="Start typing here..."></textarea>
     </div>
 
     <!-- PHONE READER VIEW -->
     <div id="phone-view" class="hidden">
-        <span id="live-text">Syncing...</span>
+        <span id="live-text">Connecting...</span>
     </div>
 
     <script>
         // 1. Smart Device Detection
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-        // 2. Generate a globally unique, deterministic room ID based on your GitHub Pages URL
-        // This ensures your phone and PC connect ONLY to each other, with no collisions.
+        // 2. Dynamic, Unique Room Channel based on your custom GitHub Pages URL.
+        // This ensures your PC and phone link only to each other, without interfering with anyone else.
         const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
-        const hostId = `${cleanUrl}-host`.substring(0, 80);
+        const syncTopic = `global-live-text-sync/${cleanUrl}`;
+
+        // Using EMQX's ultra-reliable, public secure WebSockets broker
+        const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
 
         if (!isMobile) {
             // ==========================================
@@ -128,35 +133,35 @@
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('status-text');
 
-            // PC registers with the unique Host ID
-            const peer = new Peer(hostId);
-            let activeConnection = null;
-
-            peer.on('open', () => {
-                console.log("Broadcaster active. Waiting for receiver on ID:", hostId);
+            const client = mqtt.connect(brokerUrl, {
+                clientId: 'pc_' + Math.random().toString(16).substr(2, 8),
+                clean: true,
+                connectTimeout: 4000,
+                reconnectPeriod: 1000,
             });
 
-            // When the phone opens the page, it will connect to this PC
-            peer.on('connection', (conn) => {
-                activeConnection = conn;
+            client.on('connect', () => {
                 statusDot.classList.add('connected');
-                statusText.innerText = "Phone connected! Sending live text.";
-
-                // Send current textarea value immediately on connect
-                conn.send(textarea.value);
-
-                conn.on('close', () => {
-                    statusDot.classList.remove('connected');
-                    statusText.innerText = "Phone disconnected. Ready to reconnect...";
-                    activeConnection = null;
-                });
+                statusText.innerText = "Connected globally! Anything you type here is live on your phone.";
+                
+                // Publish current text on startup (retained, so phone grabs it immediately)
+                publishText(textarea.value);
             });
 
-            // Send text updates in real-time as you type
-            textarea.addEventListener('input', () => {
-                if (activeConnection && activeConnection.open) {
-                    activeConnection.send(textarea.value);
+            client.on('close', () => {
+                statusDot.classList.remove('connected');
+                statusText.innerText = "Reconnecting to server...";
+            });
+
+            function publishText(text) {
+                if (client.connected) {
+                    // retain: true saves the message on the server, serving it instantly to the phone when it connects
+                    client.publish(syncTopic, text || " ", { qos: 1, retain: true });
                 }
+            }
+
+            textarea.addEventListener('input', (e) => {
+                publishText(e.target.value);
             });
 
         } else {
@@ -166,71 +171,58 @@
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
 
-            const peer = new Peer(); // Let peer assign a random ID to the phone
-            let connection = null;
-
-            function connectToPC() {
-                liveTextEl.innerText = "Searching for PC...";
-                liveTextEl.style.color = "#8a8a93";
-                liveTextEl.style.fontSize = "24px";
-
-                connection = peer.connect(hostId);
-
-                connection.on('open', () => {
-                    liveTextEl.innerText = "Connected! Write on your PC.";
-                    liveTextEl.style.color = "#ffffff";
-                    fitText();
-                });
-
-                connection.on('data', (data) => {
-                    liveTextEl.innerText = data || " ";
-                    fitText(); // Instantly calculate perfect font size
-                });
-
-                connection.on('close', () => {
-                    // If PC disconnects, try to reconnect every 2 seconds
-                    setTimeout(connectToPC, 2000);
-                });
-            }
-
-            peer.on('open', () => {
-                connectToPC();
+            const client = mqtt.connect(brokerUrl, {
+                clientId: 'phone_' + Math.random().toString(16).substr(2, 8),
+                clean: true,
+                connectTimeout: 4000,
+                reconnectPeriod: 1000,
             });
 
-            peer.on('error', (err) => {
-                // If PC is not online yet, retry
-                if (err.type === 'peer-allowed-active-connections' || err.type === 'peer-unavailable') {
-                    setTimeout(connectToPC, 2000);
+            client.on('connect', () => {
+                liveTextEl.innerText = "Connected! Waiting for typing...";
+                liveTextEl.style.fontSize = "24px";
+                
+                client.subscribe(syncTopic, { qos: 1 });
+            });
+
+            client.on('message', (topic, message) => {
+                if (topic === syncTopic) {
+                    const text = message.toString();
+                    liveTextEl.innerText = text;
+                    fitText(); // Instantly scale up font size
                 }
             });
 
-            // Mathematical calculation to fit text perfectly on the screen
+            client.on('close', () => {
+                liveTextEl.innerText = "Connecting to sync network...";
+                liveTextEl.style.fontSize = "24px";
+            });
+
+            // The mathematical fitting engine
             function fitText() {
                 if (!liveTextEl.innerText) return;
 
                 let min = 10;
-                let max = 600; // Cap max size to prevent insane stretching on brief words
+                let max = 600; // Limits font from growing into abstract art for short words
                 let bestFit = 10;
 
-                // Binary search algorithm to find the absolute maximum size
                 while (min <= max) {
                     let mid = Math.floor((min + max) / 2);
                     liveTextEl.style.fontSize = mid + 'px';
 
-                    // Check boundaries against 92% of the screen limits
+                    // Checks if text fits within 92% of the screen limits
                     if (liveTextEl.offsetWidth <= window.innerWidth * 0.92 && 
                         liveTextEl.offsetHeight <= window.innerHeight * 0.92) {
                         bestFit = mid;
-                        min = mid + 1; // It fits, try slightly larger
+                        min = mid + 1; // It fits! Let's try bigger
                     } else {
-                        max = mid - 1; // It overflowed, go smaller
+                        max = mid - 1; // Overflowed, dial it back
                     }
                 }
                 
                 liveTextEl.style.fontSize = bestFit + 'px';
             }
 
-            // Recalculate on screen rotation
             window.addEventListener('resize', fitText);
         }
     </script>
