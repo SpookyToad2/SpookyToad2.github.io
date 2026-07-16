@@ -78,11 +78,13 @@
         /* --- Phone Interface --- */
         #phone-view {
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
+            justify-content: flex-start; /* Aligns content to the very top */
+            align-items: center;        /* Centers text horizontally */
             width: 100vw;
             height: 100vh;
-            padding: 0;
+            /* 60px padding at the top protects against notches & status bars */
+            padding: 60px 20px 30px 20px; 
             box-sizing: border-box;
             overflow: hidden;
         }
@@ -97,7 +99,6 @@
             text-align: center;
             font-weight: 600;
             line-height: 1.15;
-            /* Prevent browser from forcing ugly breaks in the middle of words */
             word-break: normal;
             overflow-wrap: normal;
         }
@@ -176,6 +177,7 @@
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
             const phoneStatusEl = document.getElementById('phone-status');
+            const phoneViewEl = document.getElementById('phone-view');
 
             const client = mqtt.connect(brokerUrl, {
                 clientId: 'phone_' + Math.random().toString(16).substr(2, 8),
@@ -212,29 +214,35 @@
                 liveTextEl.classList.add('hidden');
             });
 
-            // The flawless mathematical fitting engine
+            // The dynamic mathematical fitting engine
             function fitText() {
                 if (!liveTextEl.innerText || liveTextEl.classList.contains('hidden')) return;
 
-                const maxW = window.innerWidth * 0.90; // Allow 5% margin on left/right
-                const maxH = window.innerHeight * 0.90; // Allow 5% margin on top/bottom
+                // Dynamically read CSS padding to calculate safe text bounds
+                const style = window.getComputedStyle(phoneViewEl);
+                const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+                const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+
+                // Safe boundaries (viewport dimensions minus safety paddings)
+                const maxW = phoneViewEl.clientWidth - paddingX;
+                const maxH = phoneViewEl.clientHeight - paddingY;
 
                 let min = 5;
-                let max = 400; // Cap max font size (prevents single letters from being giant)
+                let max = 400; // Cap max font size so short words don't stretch into massive blocks
                 let bestFit = 5;
 
-                // Reset layout parameters to measure text wrapping and overflow boundaries accurately
+                // Reset temporary layout parameters to get a clean visual calculation
                 liveTextEl.style.fontSize = '10px';
                 liveTextEl.style.display = 'inline-block';
                 liveTextEl.style.width = 'auto';
                 liveTextEl.style.maxWidth = maxW + 'px';
 
-                // Binary search to find the exact boundary
+                // Binary search to find the exact boundary threshold
                 while (min <= max) {
                     let mid = Math.floor((min + max) / 2);
                     liveTextEl.style.fontSize = mid + 'px';
 
-                    // Check physical element size AND overflow content size
+                    // Check both physical box boundaries and text content scrolling space
                     const fitsWidth = liveTextEl.offsetWidth <= maxW && liveTextEl.scrollWidth <= maxW;
                     const fitsHeight = liveTextEl.offsetHeight <= maxH && liveTextEl.scrollHeight <= maxH;
 
