@@ -201,6 +201,13 @@
             accent-color: #0a84ff;
             cursor: pointer;
         }
+        .safety-tip {
+            font-size: 11px;
+            color: #ff453a;
+            margin-top: 4px;
+            font-weight: 500;
+            text-align: left;
+        }
 
         /* --- Интерфейс для телефона --- */
         #phone-view {
@@ -280,6 +287,8 @@
                         <span id="slider-val">18%</span>
                     </div>
                     <input type="range" id="safety-slider" min="5" max="95" value="18">
+                    <!-- Текстовая подсказка -->
+                    <div class="safety-tip">Не использовать пробелы (для лучшей видимости)</div>
                 </div>
             </div>
         </div>
