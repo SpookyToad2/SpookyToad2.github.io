@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Синхронизация текста ВОВА</title>
+    <!-- MQTT через WebSockets для надежной глобальной синхронизации -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0b0f;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- Интерфейс для ПК --- */
+        #pc-view {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: 50px;
+            width: 95%;
+            max-width: 1300px;
+            height: 85%;
+            margin: 3% auto;
+        }
+
+        /* Левая колонка: Ввод и Статус */
+        .pc-control-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        h2 {
+            margin: 0 0 5px 0;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+        #status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #8a8a93;
+            margin-bottom: 20px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ff453a; /* Красный */
+            box-shadow: 0 0 8px #ff453a;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .dot.connected {
+            background-color: #30d158; /* Зеленый */
+            box-shadow: 0 0 8px #30d158;
+        }
+        textarea {
+            width: 100%;
+            height: 350px;
+            font-size: 18px;
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid #2c2c2e;
+            background: #1c1c1e;
+            color: white;
+            resize: none;
+            box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: border-color 0.2s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #0a84ff;
+        }
+
+        /* Правая колонка: Интерактивный предпросмотр */
+        .pc-preview-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #1c1c1e;
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid #2c2c2e;
+            min-width: 400px;
+        }
+        .preview-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #8a8a93;
+            margin-bottom: 15px;
+        }
+        
+        /* Симуляция экрана телефона */
+        #preview-screen {
+            position: relative;
+            width: 280px; /* Изначально портретный режим */
+            height: 480px;
+            background: #000000;
+            border: 8px solid #2c2c2e;
+            border-radius: 36px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 30px 15px 15px 15px;
+            box-sizing: border-box;
+            transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease;
+        }
+        /* Горизонтальная ориентация симулятора */
+        #preview-screen.landscape {
+            width: 480px;
+            height: 280px;
+            border-radius: 28px;
+            padding: 20px 15px 15px 15px;
+        }
+
+        #preview-status {
+            font-size: 14px;
+            color: #48484a;
+            text-align: center;
+            margin-top: 40%;
+        }
+        #preview-text {
+            margin: 0;
+            padding: 0;
+            white-space: pre-wrap;
+            text-align: center;
+            font-weight: 600;
+            line-height: 1.15;
+            word-break: normal;
+            overflow-wrap: normal;
+        }
+
+        /* Линия безопасной зоны (Горизонтальный ограничитель) */
+        #safety-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 18%; /* По умолчанию 18% */
+            border-top: 2px dashed #ff453a;
+            pointer-events: none; /* Пропускает клики сквозь себя */
+            z-index: 10;
+        }
+
+        /* Контроллеры предпросмотра */
+        .preview-controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .toggle-btn {
+            background: #2c2c2e;
+            border: none;
+            color: #8a8a93;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .toggle-btn.active {
+            background: #0a84ff;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 12px;
+            color: #8a8a93;
+        }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #0a84ff;
+            cursor: pointer;
+        }
+        .safety-tip {
+            font-size: 11px;
+            color: #ff453a;
+            margin-top: 4px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        /* --- Интерфейс для телефона --- */
+        #phone-view {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 40px 20px 20px 20px; 
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        #phone-status {
+            font-size: 18px;
+            color: #8a8a93;
+            text-align: center;
+            padding: 20px;
+        }
+        #live-text {
+            margin: 0;
+            padding: 0;
+            white-space: pre-wrap;
+            text-align: center;
+            font-weight: 600;
+            line-height: 1.15;
+            word-break: normal;
+            overflow-wrap: normal;
+        }
+
+        /* Адаптация ПК-версии под маленькие экраны ноутбуков */
+        @media (max-height: 700px) {
+            #pc-view { gap: 20px; }
+            textarea { height: 250px; }
+            #preview-screen { height: 380px; }
+            #preview-screen.landscape { height: 240px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ИНТЕРФЕЙС ДЛЯ ПК -->
+    <div id="pc-view" class="hidden">
+        
+        <!-- Левая панель управления -->
+        <div class="pc-control-panel">
+            <h2>Трансляция текста</h2>
+            <div id="status-indicator">
+                <div class="dot" id="status-dot"></div>
+                <span id="status-text">Подключение...</span>
+            </div>
+            <textarea id="text-input" placeholder="Начните вводить текст здесь..."></textarea>
+        </div>
+
+        <!-- Правая панель предпросмотра -->
+        <div class="pc-preview-panel">
+            <div class="preview-title">Предпросмотр экрана телефона</div>
+            
+            <div id="preview-screen">
+                <!-- Горизонтальная линия-ограничитель -->
+                <div id="safety-line"></div>
+                <div id="preview-status">Ожидание ввода...</div>
+                <span id="preview-text" class="hidden"></span>
+            </div>
+
+            <div class="preview-controls">
+                <!-- Переключатель ориентации -->
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="btn-portrait">Портретная</button>
+                    <button class="toggle-btn" id="btn-landscape">Альбомная (Горизонт)</button>
+                </div>
+                
+                <!-- Ползунок границы -->
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span>Линия ограничения высоты:</span>
+                        <span id="slider-val">18%</span>
+                    </div>
+                    <input type="range" id="safety-slider" min="5" max="95" value="18">
+                    <!-- Текстовая подсказка -->
+                    <div class="safety-tip">Не использовать пробелы (для лучшей видимости)</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ИНТЕРФЕЙС ДЛЯ ТЕЛЕФОНА -->
+    <div id="phone-view" class="hidden">
+        <div id="phone-status">Подключение к сети...</div>
+        <span id="live-text" class="hidden"></span>
+    </div>
+
+    <script>
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
+        const syncTopic = `global-live-text-sync/${cleanUrl}`;
+        const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+
+        // Функция форматирования текста для предотвращения переноса концевых пробелов
+        function preventTrailingSpaceWrap(text) {
+            // Заменяем все пробелы на конце строк на неразрывные пробелы (\u00A0)
+            return text.replace(/ +$/gm, match => '\u00A0'.repeat(match.length));
+        }
+
+        if (!isMobile) {
+            // ==========================================
+            // ЛОГИКА ДЛЯ ПК
+            // ==========================================
+            document.getElementById('pc-view').classList.remove('hidden');
+            const textarea = document.getElementById('text-input');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            
+            // Элементы предпросмотра
+            const previewScreen = document.getElementById('preview-screen');
+            const previewTextEl = document.getElementById('preview-text');
+            const previewStatusEl = document.getElementById('preview-status');
+            const safetyLine = document.getElementById('safety-line');
+            const safetySlider = document.getElementById('safety-slider');
+            const sliderVal = document.getElementById('slider-val');
+
+            const client = mqtt.connect(brokerUrl, {
+                clientId: 'pc_' + Math.random().toString(16).substr(2, 8),
+                clean: true,
+                connectTimeout: 4000,
+                reconnectPeriod: 1000,
+            });
+
+            client.on('connect', () => {
+                statusDot.classList.add('connected');
+                statusText.innerText = "Подключено глобально! Всё готово к трансляции.";
+                publishText(textarea.value);
+                updatePreview(textarea.value);
+            });
+
+            client.on('close', () => {
+                statusDot.classList.remove('connected');
+                statusText.innerText = "Соединение потеряно. Переподключение...";
+            });
+
+            function publishText(text) {
+                if (client.connected) {
+                    client.publish(syncTopic, text || " ", { qos: 1, retain: true });
+                }
+            }
+
+            function updatePreview(text) {
+                if (text.trim() === "") {
+                    previewStatusEl.classList.remove('hidden');
+                    previewTextEl.classList.add('hidden');
+                } else {
+                    previewStatusEl.classList.add('hidden');
+                    previewTextEl.classList.remove('hidden');
+                    // Безопасное форматирование перед вставкой
+                    previewTextEl.innerText = preventTrailingSpaceWrap(text);
+                    fitPreviewText();
+                }
+            }
+
+            // Обработка ввода
+            textarea.addEventListener('input', (e) => {
+                const text = e.target.value;
+                publishText(text);
+                updatePreview(text);
+            });
+
+            // Математический рендер симулятора (копия мобильного движка)
+            function fitPreviewText() {
+                if (!previewTextEl.innerText || previewTextEl.classList.contains('hidden')) return;
+
+                const style = window.getComputedStyle(previewScreen);
+                const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+                const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+
+                const maxW = previewScreen.clientWidth - paddingX;
+                const maxH = previewScreen.clientHeight - paddingY;
+
+                let min = 10;
+                let max = 180;
+                let bestFit = 10;
+
+                previewTextEl.style.fontSize = '10px';
+                previewTextEl.style.display = 'inline-block';
+                previewTextEl.style.width = 'auto';
+                previewTextEl.style.maxWidth = maxW + 'px';
+
+                while (min <= max) {
+                    let mid = Math.floor((min + max) / 2);
+                    previewTextEl.style.fontSize = mid + 'px';
+
+                    const fitsWidth = previewTextEl.offsetWidth <= maxW && previewTextEl.scrollWidth <= maxW;
+                    const fitsHeight = previewTextEl.offsetHeight <= maxH && previewTextEl.scrollHeight <= maxH;
+
+                    if (fitsWidth && fitsHeight) {
+                        bestFit = mid;
+                        min = mid + 1;
+                    } else {
+                        max = mid - 1;
+                    }
+                }
+
+                previewTextEl.style.fontSize = bestFit + 'px';
+                previewTextEl.style.maxWidth = maxW + 'px';
+            }
+
+            // Переключение ориентации симулятора
+            const btnPortrait = document.getElementById('btn-portrait');
+            const btnLandscape = document.getElementById('btn-landscape');
+
+            btnPortrait.addEventListener('click', () => {
+                btnPortrait.classList.add('active');
+                btnLandscape.classList.remove('active');
+                previewScreen.classList.remove('landscape');
+                setTimeout(fitPreviewText, 310);
+            });
+
+            btnLandscape.addEventListener('click', () => {
+                btnLandscape.classList.add('active');
+                btnPortrait.classList.remove('active');
+                previewScreen.classList.add('landscape');
+                setTimeout(fitPreviewText, 310);
+            });
+
+            // Логика слайдера-ограничителя
+            safetySlider.addEventListener('input', (e) => {
+                const percent = e.target.value;
+                safetyLine.style.top = percent + '%';
+                sliderVal.innerText = percent + '%';
+            });
+
+        } else {
+            // ==========================================
+            // ЛОГИКА ДЛЯ ТЕЛЕФОНА
+            // ==========================================
+            document.getElementById('phone-view').classList.remove('hidden');
+            const liveTextEl = document.getElementById('live-text');
+            const phoneStatusEl = document.getElementById('phone-status');
+            const phoneViewEl = document.getElementById('phone-view');
+
+            const client = mqtt.connect(brokerUrl, {
+                clientId: 'phone_' + Math.random().toString(16).substr(2, 8),
+                clean: true,
+                connectTimeout: 4000,
+                reconnectPeriod: 1000,
+            });
+
+            client.on('connect', () => {
+                phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
+                client.subscribe(syncTopic, { qos: 1 });
+            });
+
+            client.on('message', (topic, message) => {
+                if (topic === syncTopic) {
+                    const text = message.toString();
+                    
+                    if (text.trim() === "") {
+                        phoneStatusEl.classList.remove('hidden');
+                        phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
+                        liveTextEl.classList.add('hidden');
+                    } else {
+                        phoneStatusEl.classList.add('hidden');
+                        liveTextEl.classList.remove('hidden');
+                        // Безопасное форматирование на мобильном
+                        liveTextEl.innerText = preventTrailingSpaceWrap(text);
+                        fitText();
+                    }
+                }
+            });
+
+            client.on('close', () => {
+                phoneStatusEl.classList.remove('hidden');
+                phoneStatusEl.innerText = "Подключение...";
+                liveTextEl.classList.add('hidden');
+            });
+
+            function fitText() {
+                if (!liveTextEl.innerText || liveTextEl.classList.contains('hidden')) return;
+
+                const style = window.getComputedStyle(phoneViewEl);
+                const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+                const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+
+                const maxW = phoneViewEl.clientWidth - paddingX;
+                const maxH = phoneViewEl.clientHeight - paddingY;
+
+                let min = 10;
+                let max = 180;
+                let bestFit = 10;
+
+                liveTextEl.style.fontSize = '10px';
+                liveTextEl.style.display = 'inline-block';
+                liveTextEl.style.width = 'auto';
+                liveTextEl.style.maxWidth = maxW + 'px';
+
+                while (min <= max) {
+                    let mid = Math.floor((min + max) / 2);
+                    liveTextEl.style.fontSize = mid + 'px';
+
+                    const fitsWidth = liveTextEl.offsetWidth <= maxW && liveTextEl.scrollWidth <= maxW;
+                    const fitsHeight = liveTextEl.offsetHeight <= maxH && liveTextEl.scrollHeight <= maxH;
+
+                    if (fitsWidth && fitsHeight) {
+                        bestFit = mid;
+                        min = mid + 1;
+                    } else {
+                        max = mid - 1;
+                    }
+                }
+
+                liveTextEl.style.fontSize = bestFit + 'px';
+                liveTextEl.style.maxWidth = maxW + 'px';
+            }
+
+            window.addEventListener('resize', fitText);
+        }
+    </script>
+</body>
+</html>
