@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест записи ультраширокого экрана</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #startBtn { background-color: #a6e3a1; color: #11111b; }
+        #startBtn:hover { background-color: #94cc90; }
+        #startBtn:disabled { background-color: #45475a; color: #6c7086; cursor: not-allowed; }
+        
+        #stopBtn { background-color: #f38ba8; color: #11111b; }
+        #stopBtn:hover { background-color: #da7d97; }
+        #stopBtn:disabled { background-color: #45475a; color: #6c7086; cursor: not-allowed; }
+
+        #downloadLink {
+            display: none;
+            margin-top: 20px;
+            color: #89b4fa;
+            font-size: 18px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        #downloadLink:hover { text-decoration: underline; }
+
+        video {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 30px;
+            border: 2px solid #313244;
+            border-radius: 12px;
+            background: #11111b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Проверка записи экрана</h1>
+        <p>Видео обрабатывается локально и никуда не отправляется.</p>
+        
+        <button id="startBtn">Начать запись</button>
+        <button id="stopBtn" disabled>Остановить</button>
+        
+        <br>
+        <a id="downloadLink" download="screen-record.webm">⬇ Скачать видео (.webm)</a>
+        <br>
+        
+        <!-- Плеер для предпросмотра результата -->
+        <video id="preview" controls></video>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const preview = document.getElementById('preview');
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                // Запрашиваем доступ к экрану. Браузер сам предложит выбрать весь экран.
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { 
+                        displaySurface: "monitor",
+                        // Запрашиваем максимальное разрешение для ультрашироких мониторов
+                        width: { ideal: 7680 }, 
+                        height: { ideal: 4320 }
+                    },
+                    audio: false // Отключаем звук для простоты теста
+                });
+
+                // Используем VP9 для лучшего сохранения качества текста
+                const options = { mimeType: 'video/webm; codecs=vp9' };
+                
+                try {
+                    mediaRecorder = new MediaRecorder(stream, options);
+                } catch (e) {
+                    // Фолбэк, если браузер не поддерживает VP9
+                    mediaRecorder = new MediaRecorder(stream); 
+                }
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    // Собираем куски видео в один файл
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Показываем в плеере и даем ссылку на скачивание
+                    preview.src = url;
+                    downloadLink.href = url;
+                    downloadLink.style.display = 'inline-block';
+                    
+                    // Очищаем память
+                    recordedChunks = []; 
+                };
+
+                // Обработка кнопки "Закрыть доступ" в самом браузере
+                stream.getVideoTracks()[0].onended = () => {
+                    if(mediaRecorder.state !== "inactive") mediaRecorder.stop();
+                    resetUI();
+                };
+
+                mediaRecorder.start();
+                
+                // Обновляем интерфейс
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                downloadLink.style.display = 'none';
+                preview.src = "";
+
+            } catch (err) {
+                console.error("Ошибка доступа к экрану: ", err);
+                alert("Не удалось получить доступ к экрану. Проверьте разрешения браузера.");
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            mediaRecorder.stop();
+            // Отключаем захват экрана в браузере
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            resetUI();
+        });
+
+        function resetUI() {
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
