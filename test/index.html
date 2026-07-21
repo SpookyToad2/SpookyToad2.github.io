@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vocal Range Tester</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .container {
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    h1 { margin-top: 0; color: var(--accent); }
+    p { color: var(--subtext); }
+    button {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 8px;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    .display-box {
+      margin: 20px 0;
+      padding: 15px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+    }
+    .note { font-size: 2.5rem; font-weight: bold; color: var(--accent); }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .stat-val { font-size: 1.4rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Vocal Range Tester</h1>
+  <p>Sing into your mic to test how high and low you can pitch!</p>
+
+  <button id="startBtn">Enable Microphone</button>
+
+  <div class="display-box">
+    <div>Current Pitch</div>
+    <div id="currentNote" class="note">--</div>
+    <div id="currentFreq" style="color: var(--subtext);">0 Hz</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div>Lowest Note</div>
+      <div id="lowestNote" class="stat-val">--</div>
+    </div>
+    <div class="stat-card">
+      <div>Highest Note</div>
+      <div id="highestNote" class="stat-val">--</div>
+    </div>
+  </div>
+
+  <div class="display-box">
+    <div>Total Vocal Range</div>
+    <div id="octaveSpan" class="note" style="font-size: 1.8rem;">0 Octaves</div>
+  </div>
+
+  <button id="resetBtn">Reset Results</button>
+</div>
+
+<script>
+  let audioCtx, analyser, micStream;
+  let lowestMidi = Infinity;
+  let highestMidi = -Infinity;
+
+  const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+  document.getElementById('startBtn').addEventListener('click', initAudio);
+  document.getElementById('resetBtn').addEventListener('click', resetRange);
+
+  async function initAudio() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+
+      const source = audioCtx.createMediaStreamSource(micStream);
+      source.connect(analyser);
+
+      document.getElementById('startBtn').style.display = 'none';
+      detectPitch();
+    } catch (err) {
+      alert("Microphone access denied or unsupported browser.");
+    }
+  }
+
+  // Auto-correlation algorithm for pitch detection
+  function autoCorrelate(buffer, sampleRate) {
+    let SIZE = buffer.length;
+    let rms = 0;
+
+    for (let i = 0; i < SIZE; i++) {
+      let val = buffer[i];
+      rms += val * val;
+    }
+    rms = Math.sqrt(rms / SIZE);
+    if (rms < 0.01) return -1; // Audio signal too quiet
+
+    let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+    for (let i = 0; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+    }
+    for (let i = 1; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+    }
+
+    buffer = buffer.slice(r1, r2);
+    SIZE = buffer.length;
+
+    let c = new Array(SIZE).fill(0);
+    for (let i = 0; i < SIZE; i++) {
+      for (let j = 0; j < SIZE - i; j++) {
+        c[i] = c[i] + buffer[j] * buffer[j + i];
+      }
+    }
+
+    let d = 0; while (c[d] > c[d + 1]) d++;
+    let maxval = -1, maxpos = -1;
+    for (let i = d; i < SIZE; i++) {
+      if (c[i] > maxval) {
+        maxval = c[i];
+        maxpos = i;
+      }
+    }
+    let T0 = maxpos;
+
+    return sampleRate / T0;
+  }
+
+  function detectPitch() {
+    const buffer = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buffer);
+    const freq = autoCorrelate(buffer, audioCtx.sampleRate);
+
+    if (freq !== -1 && freq > 50 && freq < 2000) { // Limit to singing frequencies
+      const midi = Math.round(69 + 12 * Math.log2(freq / 440));
+      const noteName = midiToNote(midi);
+
+      document.getElementById('currentNote').innerText = noteName;
+      document.getElementById('currentFreq').innerText = Math.round(freq) + " Hz";
+
+      updateRange(midi, noteName);
+    }
+
+    requestAnimationFrame(detectPitch);
+  }
+
+  function midiToNote(midi) {
+    const note = noteNames[midi % 12];
+    const octave = Math.floor(midi / 12) - 1;
+    return note + octave;
+  }
+
+  function updateRange(midi, noteName) {
+    if (midi < lowestMidi) {
+      lowestMidi = midi;
+      document.getElementById('lowestNote').innerText = noteName;
+    }
+    if (midi > highestMidi) {
+      highestMidi = midi;
+      document.getElementById('highestNote').innerText = noteName;
+    }
+
+    if (lowestMidi !== Infinity && highestMidi !== -Infinity) {
+      const semitones = highestMidi - lowestMidi;
+      const octaves = (semitones / 12).toFixed(1);
+      document.getElementById('octaveSpan').innerText = `${octaves} Octaves (${semitones} Semitones)`;
+    }
+  }
+
+  function resetRange() {
+    lowestMidi = Infinity;
+    highestMidi = -Infinity;
+    document.getElementById('lowestNote').innerText = "--";
+    document.getElementById('highestNote').innerText = "--";
+    document.getElementById('octaveSpan').innerText = "0 Octaves";
+  }
+</script>
+</body>
+</html>
