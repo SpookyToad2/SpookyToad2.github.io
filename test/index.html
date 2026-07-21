@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accurate Vocal Range Tester</title>
+  <title>Vocal Range Tester</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -48,8 +48,7 @@
       margin: 8px;
       transition: all 0.2s;
     }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button:hover:not(:disabled) { opacity: 0.9; }
+    button:hover { opacity: 0.9; }
     .display-box {
       margin: 15px 0;
       padding: 15px;
@@ -69,79 +68,118 @@
       border-radius: 6px;
     }
     .stat-val { font-size: 1.5rem; font-weight: bold; color: var(--success); }
-    .status { font-size: 0.9rem; color: #f59e0b; margin-top: 5px; height: 20px; }
-    .progress-bar {
+    
+    /* Meter Styling */
+    .meter-container {
+      margin: 10px 0;
+      text-align: left;
+    }
+    .meter-label { font-size: 0.8rem; color: var(--subtext); margin-bottom: 4px; display: flex; justify-content: space-between;}
+    .bar-bg {
       width: 100%;
       background: rgba(255,255,255,0.1);
-      height: 6px;
-      border-radius: 3px;
+      height: 10px;
+      border-radius: 5px;
       overflow: hidden;
-      margin-top: 10px;
     }
-    .progress-fill {
+    .bar-fill {
       height: 100%;
       background: var(--accent);
       width: 0%;
-      transition: width 0.1s;
+      transition: width 0.05s ease-out;
     }
+    .hold-fill {
+      background: var(--success);
+      transition: width 0.05s linear;
+    }
+    
+    /* Control Slider */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 15px 0;
+      background: rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    input[type=range] { width: 100%; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h1>Vocal Range Tester</h1>
-  <p>Sing clearly and hold each note for a fraction of a second to log your high and low bounds.</p>
+  <p>Sing into your mic. Hold a steady tone to lock in your highest and lowest notes.</p>
 
-  <button id="startBtn">1. Enable Mic & Calibrate</button>
-  <div id="status" class="status">Click to begin calibration</div>
+  <button id="startBtn">Start Microphone</button>
+
+  <div class="controls">
+    <div class="meter-label">
+      <span>Mic Sensitivity Gate</span>
+      <span id="gateVal">2%</span>
+    </div>
+    <input type="range" id="gateSlider" min="0.005" max="0.1" step="0.005" value="0.02">
+  </div>
+
+  <div class="meter-container">
+    <div class="meter-label"><span>Input Volume</span></div>
+    <div class="bar-bg"><div id="volumeBar" class="bar-fill"></div></div>
+  </div>
 
   <div class="display-box">
-    <div>Live Pitch Detection</div>
+    <div>Live Pitch</div>
     <div id="currentNote" class="note">--</div>
     <div id="currentFreq" style="color: var(--subtext);">0 Hz</div>
-    <div class="progress-bar"><div id="holdProgress" class="progress-fill"></div></div>
+    
+    <div class="meter-container" style="margin-top:10px;">
+      <div class="meter-label"><span>Hold Note Stability</span></div>
+      <div class="bar-bg"><div id="holdBar" class="bar-fill hold-fill"></div></div>
+    </div>
   </div>
 
   <div class="stats">
     <div class="stat-card">
-      <div>Lowest Sustained</div>
+      <div>Lowest Pitch</div>
       <div id="lowestNote" class="stat-val">--</div>
     </div>
     <div class="stat-card">
-      <div>Highest Sustained</div>
+      <div>Highest Pitch</div>
       <div id="highestNote" class="stat-val">--</div>
     </div>
   </div>
 
   <div class="display-box">
-    <div>Total Vocal Range</div>
-    <div id="octaveSpan" class="note" style="font-size: 1.6rem; color: var(--text);">0 Octaves</div>
+    <div>Vocal Range</div>
+    <div id="octaveSpan" class="note" style="font-size: 1.5rem; color: var(--text);">0 Octaves</div>
   </div>
 
-  <button id="resetBtn">Reset Range</button>
+  <button id="resetBtn">Reset Recorded Range</button>
 </div>
 
 <script>
   let audioCtx, analyser, micStream;
-  let noiseFloorThreshold = 0.02; // Default noise gate RMS
+  let noiseGate = 0.02;
   let lowestMidi = Infinity;
   let highestMidi = -Infinity;
 
-  // Stability tracking variables
+  // Stability tracking
   let candidateMidi = null;
-  let noteHoldStartTime = 0;
-  const REQUIRED_HOLD_TIME = 300; // Time in ms to sustain note to confirm it
+  let noteStartTime = 0;
+  const HOLD_DURATION = 220; // Time in milliseconds required to confirm a note
 
   const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-  document.getElementById('startBtn').addEventListener('click', startProcess);
+  document.getElementById('startBtn').addEventListener('click', startAudio);
   document.getElementById('resetBtn').addEventListener('click', resetRange);
+  
+  const gateSlider = document.getElementById('gateSlider');
+  gateSlider.addEventListener('input', (e) => {
+    noiseGate = parseFloat(e.target.value);
+    document.getElementById('gateVal').innerText = Math.round(noiseGate * 100) + "%";
+  });
 
-  async function startProcess() {
-    const btn = document.getElementById('startBtn');
-    const status = document.getElementById('status');
-    btn.disabled = true;
-
+  async function startAudio() {
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -151,128 +189,115 @@
       const source = audioCtx.createMediaStreamSource(micStream);
       source.connect(analyser);
 
-      // Calibration Phase
-      status.innerText = "Stay quiet... calibrating room noise (3s)";
-      await calibrateNoiseFloor();
-      status.innerText = "Ready! Sing your lowest and highest notes.";
-      status.style.color = "#22c55e";
-      btn.style.display = 'none';
-
-      detectPitch();
+      document.getElementById('startBtn').style.display = 'none';
+      processAudio();
     } catch (err) {
-      status.innerText = "Error accessing microphone.";
-      btn.disabled = false;
+      alert("Microphone access is required. Check permissions.");
     }
   }
 
-  function calibrateNoiseFloor() {
-    return new Promise(resolve => {
-      let samples = [];
-      const startTime = Date.now();
-      
-      const sampleInterval = setInterval(() => {
-        const buffer = new Float32Array(analyser.fftSize);
-        analyser.getFloatTimeDomainData(buffer);
-        let sum = 0;
-        for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
-        samples.push(Math.sqrt(sum / buffer.length));
+  function autoCorrelate(buffer, sampleRate) {
+    let SIZE = buffer.length;
+    let sumSquares = 0;
 
-        if (Date.now() - startTime >= 3000) {
-          clearInterval(sampleInterval);
-          const avgNoise = samples.reduce((a, b) => a + b, 0) / samples.length;
-          // Set noise gate threshold slightly above average noise floor
-          noiseFloorThreshold = Math.max(avgNoise * 2.5, 0.015);
-          resolve();
-        }
-      }, 100);
-    });
-  }
+    for (let i = 0; i < SIZE; i++) {
+      sumSquares += buffer[i] * buffer[i];
+    }
+    let rms = Math.sqrt(sumSquares / SIZE);
 
-  // YIN-based Pitch Detection algorithm
-  function yinPitchDetect(buffer, sampleRate) {
-    let SIZE = buffer.length / 2;
-    let sum = 0;
-    let rms = 0;
+    // Update Volume UI Bar
+    const volPercent = Math.min(rms * 400, 100);
+    document.getElementById('volumeBar').style.width = volPercent + "%";
 
-    for (let i = 0; i < buffer.length; i++) rms += buffer[i] * buffer[i];
-    rms = Math.sqrt(rms / buffer.length);
-    if (rms < noiseFloorThreshold) return -1; // Ignore sounds under noise gate
+    // Silence Gate Check
+    if (rms < noiseGate) return -1;
 
-    let yinBuffer = new Float32Array(SIZE);
-    yinBuffer[0] = 1;
-
-    let runningSum = 0;
-    for (let tau = 1; tau < SIZE; tau++) {
-      let diffSum = 0;
-      for (let i = 0; i < SIZE; i++) {
-        let delta = buffer[i] - buffer[i + tau];
-        diffSum += delta * delta;
-      }
-      runningSum += diffSum;
-      yinBuffer[tau] = diffSum * tau / runningSum;
+    // Autocorrelation Pitch Extraction
+    let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+    for (let i = 0; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+    }
+    for (let i = 1; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
     }
 
-    let probabilityThreshold = 0.15;
-    let tauEstimate = -1;
-    for (let tau = 2; tau < SIZE; tau++) {
-      if (yinBuffer[tau] < probabilityThreshold) {
-        while (tau + 1 < SIZE && yinBuffer[tau + 1] < yinBuffer[tau]) tau++;
-        tauEstimate = tau;
-        break;
+    buffer = buffer.slice(r1, r2);
+    SIZE = buffer.length;
+
+    let c = new Array(SIZE).fill(0);
+    for (let i = 0; i < SIZE; i++) {
+      for (let j = 0; j < SIZE - i; j++) {
+        c[i] = c[i] + buffer[j] * buffer[j + i];
       }
     }
 
-    if (tauEstimate === -1) return -1;
-    return sampleRate / tauEstimate;
+    let d = 0; 
+    while (c[d] > c[d + 1]) d++;
+    let maxval = -1, maxpos = -1;
+    for (let i = d; i < SIZE; i++) {
+      if (c[i] > maxval) {
+        maxval = c[i];
+        maxpos = i;
+      }
+    }
+    let T0 = maxpos;
+
+    // Parabolic interpolation for smoother accuracy
+    let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+    let a = (x1 + x3 - 2 * x2) / 2;
+    let b = (x3 - x1) / 2;
+    if (a) T0 = T0 - b / (2 * a);
+
+    return sampleRate / T0;
   }
 
-  function detectPitch() {
+  function processAudio() {
     const buffer = new Float32Array(analyser.fftSize);
     analyser.getFloatTimeDomainData(buffer);
-    const freq = yinPitchDetect(buffer, audioCtx.sampleRate);
+    const freq = autoCorrelate(buffer, audioCtx.sampleRate);
 
-    // Filter out frequencies outside human vocal bounds (~60 Hz to 1500 Hz)
-    if (freq > 60 && freq < 1500) {
+    // Standard human vocal frequency bounds (~65Hz C2 to ~1300Hz E6)
+    if (freq > 65 && freq < 1300) {
       const midi = Math.round(69 + 12 * Math.log2(freq / 440));
       const noteName = midiToNote(midi);
 
       document.getElementById('currentNote').innerText = noteName;
       document.getElementById('currentFreq').innerText = Math.round(freq) + " Hz";
 
-      processSustainedPitch(midi, noteName);
+      handleHoldCheck(midi, noteName);
     } else {
-      resetStabilityCheck();
+      resetHoldBar();
     }
 
-    requestAnimationFrame(detectPitch);
+    requestAnimationFrame(processAudio);
   }
 
-  function processSustainedPitch(midi, noteName) {
+  function handleHoldCheck(midi, noteName) {
     const now = Date.now();
-    
-    if (candidateMidi === midi) {
-      const heldTime = now - noteHoldStartTime;
-      const progressPercent = Math.min((heldTime / REQUIRED_HOLD_TIME) * 100, 100);
-      document.getElementById('holdProgress').style.width = progressPercent + "%";
 
-      if (heldTime >= REQUIRED_HOLD_TIME) {
-        commitValidPitch(midi, noteName);
+    if (candidateMidi === midi) {
+      const elapsed = now - noteStartTime;
+      const progressPercent = Math.min((elapsed / HOLD_DURATION) * 100, 100);
+      document.getElementById('holdBar').style.width = progressPercent + "%";
+
+      if (elapsed >= HOLD_DURATION) {
+        registerNote(midi, noteName);
       }
     } else {
       candidateMidi = midi;
-      noteHoldStartTime = now;
-      document.getElementById('holdProgress').style.width = "0%";
+      noteStartTime = now;
+      document.getElementById('holdBar').style.width = "0%";
     }
   }
 
-  function resetStabilityCheck() {
+  function resetHoldBar() {
     candidateMidi = null;
-    document.getElementById('holdProgress').style.width = "0%";
+    document.getElementById('holdBar').style.width = "0%";
     document.getElementById('currentNote').innerText = "--";
     document.getElementById('currentFreq').innerText = "0 Hz";
   }
 
-  function commitValidPitch(midi, noteName) {
+  function registerNote(midi, noteName) {
     if (midi < lowestMidi) {
       lowestMidi = midi;
       document.getElementById('lowestNote').innerText = noteName;
@@ -301,7 +326,7 @@
     document.getElementById('lowestNote').innerText = "--";
     document.getElementById('highestNote').innerText = "--";
     document.getElementById('octaveSpan').innerText = "0 Octaves";
-    resetStabilityCheck();
+    resetHoldBar();
   }
 </script>
 </body>
