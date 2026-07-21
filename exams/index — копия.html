@@ -13,36 +13,12 @@
             width: 100%;
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #ffffff;
-            color: #000000;
+            background-color: #0b0b0f;
+            color: #ffffff;
             overflow: hidden;
         }
 
         .hidden { display: none !important; }
-
-        /* --- Информационная плашка модели устройства --- */
-        #device-info-bar {
-            position: fixed;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(242, 242, 247, 0.95);
-            border: 1px solid #d1d1d6;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #3a3a3c;
-            z-index: 9999;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            white-space: nowrap;
-            max-width: 90%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            pointer-events: none;
-        }
-        #device-info-bar strong {
-            color: #007aff;
-        }
 
         /* --- Интерфейс для ПК --- */
         #pc-view {
@@ -74,20 +50,20 @@
             align-items: center;
             gap: 8px;
             font-size: 14px;
-            color: #636366;
+            color: #8a8a93;
             margin-bottom: 20px;
         }
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #ff3b30;
-            box-shadow: 0 0 6px #ff3b30;
+            background-color: #ff453a; /* Красный */
+            box-shadow: 0 0 8px #ff453a;
             transition: background-color 0.3s, box-shadow 0.3s;
         }
         .dot.connected {
-            background-color: #34c759;
-            box-shadow: 0 0 6px #34c759;
+            background-color: #30d158; /* Зеленый */
+            box-shadow: 0 0 8px #30d158;
         }
         textarea {
             width: 100%;
@@ -95,17 +71,17 @@
             font-size: 18px;
             padding: 20px;
             border-radius: 14px;
-            border: 1px solid #d1d1d6;
-            background: #f2f2f7;
-            color: #000000;
+            border: 1px solid #2c2c2e;
+            background: #1c1c1e;
+            color: white;
             resize: none;
             box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             transition: border-color 0.2s;
         }
         textarea:focus {
             outline: none;
-            border-color: #007aff;
+            border-color: #0a84ff;
         }
 
         /* Правая колонка: Интерактивный предпросмотр */
@@ -114,28 +90,28 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #f2f2f7;
+            background: #1c1c1e;
             padding: 25px;
             border-radius: 20px;
-            border: 1px solid #e5e5ea;
+            border: 1px solid #2c2c2e;
             min-width: 400px;
         }
         .preview-title {
             font-size: 16px;
             font-weight: 500;
-            color: #636366;
+            color: #8a8a93;
             margin-bottom: 15px;
         }
         
         /* Симуляция экрана телефона */
         #preview-screen {
             position: relative;
-            width: 280px;
+            width: 280px; /* Изначально портретный режим */
             height: 480px;
-            background: #ffffff;
-            border: 8px solid #1c1c1e;
+            background: #000000;
+            border: 8px solid #2c2c2e;
             border-radius: 36px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -145,6 +121,7 @@
             box-sizing: border-box;
             transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease;
         }
+        /* Горизонтальная ориентация симулятора */
         #preview-screen.landscape {
             width: 480px;
             height: 280px;
@@ -154,7 +131,7 @@
 
         #preview-status {
             font-size: 14px;
-            color: #8e8e93;
+            color: #48484a;
             text-align: center;
             margin-top: 40%;
         }
@@ -167,17 +144,16 @@
             line-height: 1.15;
             word-break: normal;
             overflow-wrap: normal;
-            color: #000000;
         }
 
-        /* Линия безопасной зоны */
+        /* Линия безопасной зоны (Горизонтальный ограничитель) */
         #safety-line {
             position: absolute;
             left: 0;
             right: 0;
-            top: 18%;
-            border-top: 2px dashed #ff3b30;
-            pointer-events: none;
+            top: 18%; /* По умолчанию 18% */
+            border-top: 2px dashed #ff453a;
+            pointer-events: none; /* Пропускает клики сквозь себя */
             z-index: 10;
         }
 
@@ -195,9 +171,9 @@
             justify-content: center;
         }
         .toggle-btn {
-            background: #e5e5ea;
+            background: #2c2c2e;
             border: none;
-            color: #48484a;
+            color: #8a8a93;
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
@@ -205,7 +181,7 @@
             transition: all 0.2s;
         }
         .toggle-btn.active {
-            background: #007aff;
+            background: #0a84ff;
             color: #ffffff;
             font-weight: 500;
         }
@@ -214,7 +190,7 @@
             flex-direction: column;
             gap: 5px;
             font-size: 12px;
-            color: #636366;
+            color: #8a8a93;
         }
         .slider-header {
             display: flex;
@@ -222,12 +198,12 @@
         }
         input[type="range"] {
             width: 100%;
-            accent-color: #007aff;
+            accent-color: #0a84ff;
             cursor: pointer;
         }
         .safety-tip {
             font-size: 11px;
-            color: #ff3b30;
+            color: #ff453a;
             margin-top: 4px;
             font-weight: 500;
             text-align: left;
@@ -244,11 +220,10 @@
             padding: 40px 20px 20px 20px; 
             box-sizing: border-box;
             overflow: hidden;
-            background-color: #ffffff;
         }
         #phone-status {
             font-size: 18px;
-            color: #8e8e93;
+            color: #8a8a93;
             text-align: center;
             padding: 20px;
         }
@@ -261,9 +236,9 @@
             line-height: 1.15;
             word-break: normal;
             overflow-wrap: normal;
-            color: #000000;
         }
 
+        /* Адаптация ПК-версии под маленькие экраны ноутбуков */
         @media (max-height: 700px) {
             #pc-view { gap: 20px; }
             textarea { height: 250px; }
@@ -274,12 +249,10 @@
 </head>
 <body>
 
-    <!-- ПЛАШКА С ИНФОРМАЦИЕЙ ОБ УСТРОЙСТВЕ -->
-    <div id="device-info-bar">Признак устройства: <strong id="device-signature">Определение...</strong></div>
-
     <!-- ИНТЕРФЕЙС ДЛЯ ПК -->
     <div id="pc-view" class="hidden">
         
+        <!-- Левая панель управления -->
         <div class="pc-control-panel">
             <h2>Трансляция текста</h2>
             <div id="status-indicator">
@@ -289,27 +262,32 @@
             <textarea id="text-input" placeholder="Начните вводить текст здесь..."></textarea>
         </div>
 
+        <!-- Правая панель предпросмотра -->
         <div class="pc-preview-panel">
             <div class="preview-title">Предпросмотр экрана телефона</div>
             
             <div id="preview-screen">
+                <!-- Горизонтальная линия-ограничитель -->
                 <div id="safety-line"></div>
                 <div id="preview-status">Ожидание ввода...</div>
                 <span id="preview-text" class="hidden"></span>
             </div>
 
             <div class="preview-controls">
+                <!-- Переключатель ориентации -->
                 <div class="toggle-group">
                     <button class="toggle-btn active" id="btn-portrait">Портретная</button>
                     <button class="toggle-btn" id="btn-landscape">Альбомная (Горизонт)</button>
                 </div>
                 
+                <!-- Ползунок границы -->
                 <div class="slider-group">
                     <div class="slider-header">
                         <span>Линия ограничения высоты:</span>
                         <span id="slider-val">18%</span>
                     </div>
                     <input type="range" id="safety-slider" min="5" max="95" value="18">
+                    <!-- Текстовая подсказка -->
                     <div class="safety-tip">Не использовать пробелы (для лучшей видимости)</div>
                 </div>
             </div>
@@ -324,82 +302,27 @@
     </div>
 
     <script>
-        // ==========================================
-        // НАСТРОЙКА ФИЛЬТРА УСТРОЙСТВА
-        // ==========================================
-        // Впишите сюда уникальный признак телефона (например: "SM-S918B", "iPhone", "390x844" или название GPU).
-        // Если оставить пустым "", переключать будет ВСЕ мобильные устройства.
-        const TARGET_DEVICE_MODEL = ""; 
-
-        // Функция сбора параметров устройства
-        function getDeviceInfo() {
-            const ua = navigator.userAgent;
-            const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio || 1})`;
-            
-            // Извлекаем ОС/Модель из UA
-            let osAndModel = "Unknown";
-            const match = ua.match(/\(([^)]+)\)/);
-            if (match && match[1]) {
-                osAndModel = match[1];
-            }
-
-            // Определяем видеочип (GPU)
-            let gpu = "";
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                if (gl) {
-                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (debugInfo) {
-                        gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                    }
-                }
-            } catch(e) {}
-
-            const fullString = `${osAndModel} | ${screenRes}${gpu ? ' | ' + gpu : ''}`;
-            return {
-                ua,
-                osAndModel,
-                screenRes,
-                gpu,
-                fullString
-            };
-        }
-
-        const deviceInfo = getDeviceInfo();
-        document.getElementById('device-signature').innerText = deviceInfo.fullString;
-
-        // Определяем, базово ли это мобильное устройство
-        const isMobileStandard = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-        
-        // Логика переключения:
-        // Если TARGET_DEVICE_MODEL задан, проверяем совпадение в сигнатуре.
-        // Если TARGET_DEVICE_MODEL пуст, используем стандартное определение мобильного.
-        let isPhoneMode = false;
-        if (TARGET_DEVICE_MODEL.trim() !== "") {
-            isPhoneMode = deviceInfo.fullString.toLowerCase().includes(TARGET_DEVICE_MODEL.trim().toLowerCase());
-        } else {
-            isPhoneMode = isMobileStandard;
-        }
-
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
         const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
         const syncTopic = `global-live-text-sync/${cleanUrl}`;
         const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
 
-        // Форматирование для предотвращения переноса концевых пробелов
+        // Функция форматирования текста для предотвращения переноса концевых пробелов
         function preventTrailingSpaceWrap(text) {
+            // Заменяем все пробелы на конце строк на неразрывные пробелы (\u00A0)
             return text.replace(/ +$/gm, match => '\u00A0'.repeat(match.length));
         }
 
-        if (!isPhoneMode) {
+        if (!isMobile) {
             // ==========================================
-            // ЛОГИКА ДЛЯ ПК (ИЛИ НЕЦЕЛЕВЫХ УСТРОЙСТВ)
+            // ЛОГИКА ДЛЯ ПК
             // ==========================================
             document.getElementById('pc-view').classList.remove('hidden');
             const textarea = document.getElementById('text-input');
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('status-text');
             
+            // Элементы предпросмотра
             const previewScreen = document.getElementById('preview-screen');
             const previewTextEl = document.getElementById('preview-text');
             const previewStatusEl = document.getElementById('preview-status');
@@ -439,17 +362,20 @@
                 } else {
                     previewStatusEl.classList.add('hidden');
                     previewTextEl.classList.remove('hidden');
+                    // Безопасное форматирование перед вставкой
                     previewTextEl.innerText = preventTrailingSpaceWrap(text);
                     fitPreviewText();
                 }
             }
 
+            // Обработка ввода
             textarea.addEventListener('input', (e) => {
                 const text = e.target.value;
                 publishText(text);
                 updatePreview(text);
             });
 
+            // Математический рендер симулятора (копия мобильного движка)
             function fitPreviewText() {
                 if (!previewTextEl.innerText || previewTextEl.classList.contains('hidden')) return;
 
@@ -488,6 +414,7 @@
                 previewTextEl.style.maxWidth = maxW + 'px';
             }
 
+            // Переключение ориентации симулятора
             const btnPortrait = document.getElementById('btn-portrait');
             const btnLandscape = document.getElementById('btn-landscape');
 
@@ -505,6 +432,7 @@
                 setTimeout(fitPreviewText, 310);
             });
 
+            // Логика слайдера-ограничителя
             safetySlider.addEventListener('input', (e) => {
                 const percent = e.target.value;
                 safetyLine.style.top = percent + '%';
@@ -513,7 +441,7 @@
 
         } else {
             // ==========================================
-            // ЛОГИКА ДЛЯ ЦЕЛЕВОГО ТЕЛЕФОНА
+            // ЛОГИКА ДЛЯ ТЕЛЕФОНА
             // ==========================================
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
@@ -543,6 +471,7 @@
                     } else {
                         phoneStatusEl.classList.add('hidden');
                         liveTextEl.classList.remove('hidden');
+                        // Безопасное форматирование на мобильном
                         liveTextEl.innerText = preventTrailingSpaceWrap(text);
                         fitText();
                     }
