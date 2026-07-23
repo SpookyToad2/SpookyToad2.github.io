@@ -20,7 +20,7 @@
 
         .hidden { display: none !important; }
 
-        /* --- Информационная плашка модели устройства (интерактивная) --- */
+        /* --- Информационная плашка модели устройства --- */
         #device-info-bar {
             position: fixed;
             bottom: 8px;
@@ -28,7 +28,7 @@
             transform: translateX(-50%);
             background: rgba(242, 242, 247, 0.95);
             border: 1px solid #d1d1d6;
-            padding: 6px 12px 6px 14px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 11px;
             color: #3a3a3c;
@@ -38,13 +38,6 @@
             max-width: 92%;
             display: flex;
             align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            user-select: none;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        #device-info-bar:active {
-            transform: translateX(-50%) scale(0.98);
         }
         #device-info-text {
             overflow: hidden;
@@ -53,16 +46,6 @@
         }
         #device-info-bar strong {
             color: #007aff;
-        }
-        .copy-btn-badge {
-            background: #007aff;
-            color: #ffffff;
-            padding: 3px 9px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            flex-shrink: 0;
-            transition: background-color 0.2s;
         }
 
         /* --- Интерфейс для ПК (и разрешенных телефонов) --- */
@@ -304,7 +287,7 @@
                 height: 180px;
             }
             body, html {
-                overflow-y: auto; /* Возвращаем прокрутку, если открыто на телефоне в режиме редактирования */
+                overflow-y: auto; 
             }
         }
 
@@ -318,10 +301,9 @@
 </head>
 <body>
 
-    <!-- ПЛАШКА С ИНФОРМАЦИЕЙ ОБ УСТРОЙСТВЕ И КНОПКОЙ КОПИРОВАНИЯ -->
-    <div id="device-info-bar" title="Нажмите, чтобы скопировать параметры">
+    <!-- ПЛАШКА С ИНФОРМАЦИЕЙ ОБ УСТРОЙСТВЕ -->
+    <div id="device-info-bar">
         <span id="device-info-text">Признак устройства: <strong id="device-signature">Определение...</strong></span>
-        <span class="copy-btn-badge" id="copy-badge">Скопировать 📋</span>
     </div>
 
     <!-- ИНТЕРФЕЙС ДЛЯ НАПИСАНИЯ ТЕКСТА (ПК + Разрешенные телефоны) -->
@@ -374,8 +356,6 @@
         // ==========================================
         // НАСТРОЙКА ФИЛЬТРА УСТРОЙСТВА
         // ==========================================
-        // Массив с уникальными признаками разрешенных телефонов.
-        // ТОЛЬКО ЭТИ УСТРОЙСТВА И ПК СМОГУТ ПИСАТЬ ТЕКСТ.
         const TARGET_DEVICES = [
             "Linux; arm_64; Android 13; 23122PCD1G | 407x904 (DPR: 3) | Adreno (TM) 710",
             "iPhone; CPU iPhone OS 17_5_1 like Mac OS X | 430x932 (DPR: 3) | Apple GPU"
@@ -417,45 +397,9 @@
         const deviceInfo = getDeviceInfo();
         document.getElementById('device-signature').innerText = deviceInfo.fullString;
 
-        // Логика копирования в буфер обмена по клику
-        const infoBar = document.getElementById('device-info-bar');
-        const copyBadge = document.getElementById('copy-badge');
-
-        infoBar.addEventListener('click', () => {
-            const textToCopy = deviceInfo.fullString;
-
-            const showSuccess = () => {
-                copyBadge.innerText = 'Скопировано! ✓';
-                copyBadge.style.background = '#34c759'; 
-                setTimeout(() => {
-                    copyBadge.innerText = 'Скопировать 📋';
-                    copyBadge.style.background = '#007aff';
-                }, 2000);
-            };
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(textToCopy).then(showSuccess).catch(() => fallbackCopy(textToCopy, showSuccess));
-            } else {
-                fallbackCopy(textToCopy, showSuccess);
-            }
-        });
-
-        function fallbackCopy(text, callback) {
-            const tempInput = document.createElement('textarea');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            callback();
-        }
-
-        // Определяем, является ли устройство мобильным (по умолчанию все мобильные - это получатели)
+        // Определяем, является ли устройство мобильным
         const isMobileStandard = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
         
-        // Логика переключения режимов
-        // isReceiverMode = true -> Только чтение
-        // isReceiverMode = false -> Можно писать текст (Открывается интерфейс как на ПК)
         let isReceiverMode = isMobileStandard; // Изначально все телефоны только читают
         
         if (TARGET_DEVICES.length > 0) {
@@ -476,7 +420,7 @@
 
         if (!isReceiverMode) {
             // ==========================================
-            // ЛОГИКА ДЛЯ НАПИСАНИЯ ТЕКСТА (ПК и Разрешенные телефоны)
+            // ЛОГИКА ДЛЯ НАПИСАНИЯ ТЕКСТА
             // ==========================================
             document.getElementById('pc-view').classList.remove('hidden');
             const textarea = document.getElementById('text-input');
@@ -596,7 +540,7 @@
 
         } else {
             // ==========================================
-            // ЛОГИКА ДЛЯ ЧТЕНИЯ ТЕКСТА (Остальные телефоны)
+            // ЛОГИКА ДЛЯ ЧТЕНИЯ ТЕКСТА
             // ==========================================
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
