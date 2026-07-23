@@ -351,12 +351,9 @@
         // ==========================================
         // НАСТРОЙКА ФИЛЬТРА УСТРОЙСТВА
         // ==========================================
-        // Массив с уникальными признаками разрешенных телефонов.
-        // Режим отображения текста на телефоне включится ТОЛЬКО для них.
-        const TARGET_DEVICES = [
-            "Linux; arm_64; Android 13; 23122PCD1G | 407x904 (DPR: 3) | Adreno (TM) 710",
-            "iPhone; CPU iPhone OS 17_5_1 like Mac OS X | 430x932 (DPR: 3) | Apple GPU"
-        ]; 
+        // Впишите сюда уникальный признак телефона (например: "SM-S918B", "iPhone", "390x844" или название GPU).
+        // Если оставить пустым "", переключать будет ВСЕ мобильные устройства.
+        const TARGET_DEVICE_MODEL = ""; 
 
         // Функция сбора параметров устройства
         function getDeviceInfo() {
@@ -403,7 +400,7 @@
 
             const showSuccess = () => {
                 copyBadge.innerText = 'Скопировано! ✓';
-                copyBadge.style.background = '#34c759'; 
+                copyBadge.style.background = '#34c759'; // Зеленый цвет при успехе
                 setTimeout(() => {
                     copyBadge.innerText = 'Скопировать 📋';
                     copyBadge.style.background = '#007aff';
@@ -430,10 +427,9 @@
         // Определяем ориентацию/тип устройства
         const isMobileStandard = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
         
-        // Логика переключения интерфейса (Только эти 2 устройства)
         let isPhoneMode = false;
-        if (TARGET_DEVICES.length > 0) {
-            isPhoneMode = TARGET_DEVICES.some(model => deviceInfo.fullString.toLowerCase().includes(model.toLowerCase()));
+        if (TARGET_DEVICE_MODEL.trim() !== "") {
+            isPhoneMode = deviceInfo.fullString.toLowerCase().includes(TARGET_DEVICE_MODEL.trim().toLowerCase());
         } else {
             isPhoneMode = isMobileStandard;
         }
