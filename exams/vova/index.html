@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Синхронизация текста ВОВА</title>
+    <title>Синхронизация текста</title>
     <!-- MQTT через WebSockets для надежной глобальной синхронизации -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
@@ -13,14 +13,14 @@
             width: 100%;
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #0b0b0f;
+            background-color: #121212;
             color: #ffffff;
             overflow: hidden;
         }
 
         .hidden { display: none !important; }
 
-        /* --- Интерфейс для ПК --- */
+        /* --- Интерфейс для ПК (и разрешенных телефонов) --- */
         #pc-view {
             display: flex;
             flex-direction: row;
@@ -50,20 +50,20 @@
             align-items: center;
             gap: 8px;
             font-size: 14px;
-            color: #8a8a93;
+            color: #98989d;
             margin-bottom: 20px;
         }
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #ff453a; /* Красный */
-            box-shadow: 0 0 8px #ff453a;
+            background-color: #ff453a;
+            box-shadow: 0 0 6px #ff453a;
             transition: background-color 0.3s, box-shadow 0.3s;
         }
         .dot.connected {
-            background-color: #30d158; /* Зеленый */
-            box-shadow: 0 0 8px #30d158;
+            background-color: #32d74b;
+            box-shadow: 0 0 6px #32d74b;
         }
         textarea {
             width: 100%;
@@ -71,9 +71,9 @@
             font-size: 18px;
             padding: 20px;
             border-radius: 14px;
-            border: 1px solid #2c2c2e;
+            border: 1px solid #3a3a3c;
             background: #1c1c1e;
-            color: white;
+            color: #ffffff;
             resize: none;
             box-sizing: border-box;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -82,6 +82,9 @@
         textarea:focus {
             outline: none;
             border-color: #0a84ff;
+        }
+        textarea::placeholder {
+            color: #636366;
         }
 
         /* Правая колонка: Интерактивный предпросмотр */
@@ -99,19 +102,19 @@
         .preview-title {
             font-size: 16px;
             font-weight: 500;
-            color: #8a8a93;
+            color: #98989d;
             margin-bottom: 15px;
         }
         
         /* Симуляция экрана телефона */
         #preview-screen {
             position: relative;
-            width: 280px; /* Изначально портретный режим */
+            width: 280px;
             height: 480px;
             background: #000000;
-            border: 8px solid #2c2c2e;
+            border: 8px solid #3a3a3c;
             border-radius: 36px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -121,7 +124,6 @@
             box-sizing: border-box;
             transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease;
         }
-        /* Горизонтальная ориентация симулятора */
         #preview-screen.landscape {
             width: 480px;
             height: 280px;
@@ -131,7 +133,7 @@
 
         #preview-status {
             font-size: 14px;
-            color: #48484a;
+            color: #636366;
             text-align: center;
             margin-top: 40%;
         }
@@ -144,16 +146,17 @@
             line-height: 1.15;
             word-break: normal;
             overflow-wrap: normal;
+            color: #ffffff;
         }
 
-        /* Линия безопасной зоны (Горизонтальный ограничитель) */
+        /* Линия безопасной зоны */
         #safety-line {
             position: absolute;
             left: 0;
             right: 0;
-            top: 18%; /* По умолчанию 18% */
+            top: 18%;
             border-top: 2px dashed #ff453a;
-            pointer-events: none; /* Пропускает клики сквозь себя */
+            pointer-events: none;
             z-index: 10;
         }
 
@@ -173,7 +176,7 @@
         .toggle-btn {
             background: #2c2c2e;
             border: none;
-            color: #8a8a93;
+            color: #98989d;
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
@@ -190,7 +193,7 @@
             flex-direction: column;
             gap: 5px;
             font-size: 12px;
-            color: #8a8a93;
+            color: #98989d;
         }
         .slider-header {
             display: flex;
@@ -209,7 +212,7 @@
             text-align: left;
         }
 
-        /* --- Интерфейс для телефона --- */
+        /* --- Интерфейс для телефона (только чтение) --- */
         #phone-view {
             display: flex;
             flex-direction: column;
@@ -220,10 +223,11 @@
             padding: 40px 20px 20px 20px; 
             box-sizing: border-box;
             overflow: hidden;
+            background-color: #000000;
         }
         #phone-status {
             font-size: 18px;
-            color: #8a8a93;
+            color: #636366;
             text-align: center;
             padding: 20px;
         }
@@ -236,10 +240,33 @@
             line-height: 1.15;
             word-break: normal;
             overflow-wrap: normal;
+            color: #ffffff;
         }
 
-        /* Адаптация ПК-версии под маленькие экраны ноутбуков */
-        @media (max-height: 700px) {
+        /* Адаптация режима написания для экранов телефонов */
+        @media (max-width: 850px) {
+            #pc-view {
+                flex-direction: column;
+                justify-content: flex-start;
+                height: auto;
+                gap: 20px;
+                padding-bottom: 70px;
+                overflow-y: auto;
+            }
+            .pc-control-panel, .pc-preview-panel {
+                width: 100%;
+                min-width: unset;
+                box-sizing: border-box;
+            }
+            textarea {
+                height: 180px;
+            }
+            body, html {
+                overflow-y: auto; 
+            }
+        }
+
+        @media (max-height: 700px) and (min-width: 851px) {
             #pc-view { gap: 20px; }
             textarea { height: 250px; }
             #preview-screen { height: 380px; }
@@ -249,10 +276,9 @@
 </head>
 <body>
 
-    <!-- ИНТЕРФЕЙС ДЛЯ ПК -->
+    <!-- ИНТЕРФЕЙС ДЛЯ НАПИСАНИЯ ТЕКСТА (ПК + Разрешенные телефоны) -->
     <div id="pc-view" class="hidden">
         
-        <!-- Левая панель управления -->
         <div class="pc-control-panel">
             <h2>Трансляция текста [ВОВА]</h2>
             <div id="status-indicator">
@@ -262,32 +288,27 @@
             <textarea id="text-input" placeholder="Начните вводить текст здесь..."></textarea>
         </div>
 
-        <!-- Правая панель предпросмотра -->
         <div class="pc-preview-panel">
             <div class="preview-title">Предпросмотр экрана телефона</div>
             
             <div id="preview-screen">
-                <!-- Горизонтальная линия-ограничитель -->
                 <div id="safety-line"></div>
                 <div id="preview-status">Ожидание ввода...</div>
                 <span id="preview-text" class="hidden"></span>
             </div>
 
             <div class="preview-controls">
-                <!-- Переключатель ориентации -->
                 <div class="toggle-group">
                     <button class="toggle-btn active" id="btn-portrait">Портретная</button>
                     <button class="toggle-btn" id="btn-landscape">Альбомная (Горизонт)</button>
                 </div>
                 
-                <!-- Ползунок границы -->
                 <div class="slider-group">
                     <div class="slider-header">
                         <span>Линия ограничения высоты:</span>
                         <span id="slider-val">18%</span>
                     </div>
                     <input type="range" id="safety-slider" min="5" max="95" value="18">
-                    <!-- Текстовая подсказка -->
                     <div class="safety-tip">Не использовать пробелы (для лучшей видимости)</div>
                 </div>
             </div>
@@ -295,34 +316,79 @@
 
     </div>
 
-    <!-- ИНТЕРФЕЙС ДЛЯ ТЕЛЕФОНА -->
+    <!-- ИНТЕРФЕЙС ДЛЯ ЧТЕНИЯ (Остальные телефоны) -->
     <div id="phone-view" class="hidden">
         <div id="phone-status">Подключение к сети...</div>
         <span id="live-text" class="hidden"></span>
     </div>
 
     <script>
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        // ==========================================
+        // НАСТРОЙКА ФИЛЬТРА УСТРОЙСТВА
+        // ==========================================
+        const TARGET_DEVICES = [
+            "Linux; arm_64; Android 13; 23122PCD1G | 407x904 (DPR: 3) | Adreno (TM) 710",
+            "iPhone; CPU iPhone OS 17_5_1 like Mac OS X | 430x932 (DPR: 3) | Apple GPU"
+        ]; 
+
+        // Функция сбора параметров устройства (для скрытой проверки)
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio || 1})`;
+            
+            let osAndModel = "Unknown";
+            const match = ua.match(/\(([^)]+)\)/);
+            if (match && match[1]) {
+                osAndModel = match[1];
+            }
+
+            let gpu = "";
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    }
+                }
+            } catch(e) {}
+
+            return `${osAndModel} | ${screenRes}${gpu ? ' | ' + gpu : ''}`;
+        }
+
+        const deviceString = getDeviceInfo();
+
+        // Определяем, является ли устройство мобильным
+        const isMobileStandard = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        
+        let isReceiverMode = isMobileStandard; // Изначально все телефоны только читают
+        
+        if (TARGET_DEVICES.length > 0) {
+            // Проверяем, совпадает ли сигнатура телефона с разрешенными
+            const isTarget = TARGET_DEVICES.some(model => deviceString.toLowerCase().includes(model.toLowerCase()));
+            if (isTarget) {
+                isReceiverMode = false; // РАЗРЕШАЕМ ПИСАТЬ (переводим телефон в режим ПК)
+            }
+        }
+
         const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
         const syncTopic = `global-live-text-sync/${cleanUrl}`;
         const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
 
-        // Функция форматирования текста для предотвращения переноса концевых пробелов
         function preventTrailingSpaceWrap(text) {
-            // Заменяем все пробелы на конце строк на неразрывные пробелы (\u00A0)
             return text.replace(/ +$/gm, match => '\u00A0'.repeat(match.length));
         }
 
-        if (!isMobile) {
+        if (!isReceiverMode) {
             // ==========================================
-            // ЛОГИКА ДЛЯ ПК
+            // ЛОГИКА ДЛЯ НАПИСАНИЯ ТЕКСТА
             // ==========================================
             document.getElementById('pc-view').classList.remove('hidden');
             const textarea = document.getElementById('text-input');
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('status-text');
             
-            // Элементы предпросмотра
             const previewScreen = document.getElementById('preview-screen');
             const previewTextEl = document.getElementById('preview-text');
             const previewStatusEl = document.getElementById('preview-status');
@@ -331,7 +397,7 @@
             const sliderVal = document.getElementById('slider-val');
 
             const client = mqtt.connect(brokerUrl, {
-                clientId: 'pc_' + Math.random().toString(16).substr(2, 8),
+                clientId: 'sender_' + Math.random().toString(16).substr(2, 8),
                 clean: true,
                 connectTimeout: 4000,
                 reconnectPeriod: 1000,
@@ -362,20 +428,17 @@
                 } else {
                     previewStatusEl.classList.add('hidden');
                     previewTextEl.classList.remove('hidden');
-                    // Безопасное форматирование перед вставкой
                     previewTextEl.innerText = preventTrailingSpaceWrap(text);
                     fitPreviewText();
                 }
             }
 
-            // Обработка ввода
             textarea.addEventListener('input', (e) => {
                 const text = e.target.value;
                 publishText(text);
                 updatePreview(text);
             });
 
-            // Математический рендер симулятора (копия мобильного движка)
             function fitPreviewText() {
                 if (!previewTextEl.innerText || previewTextEl.classList.contains('hidden')) return;
 
@@ -414,7 +477,6 @@
                 previewTextEl.style.maxWidth = maxW + 'px';
             }
 
-            // Переключение ориентации симулятора
             const btnPortrait = document.getElementById('btn-portrait');
             const btnLandscape = document.getElementById('btn-landscape');
 
@@ -432,7 +494,6 @@
                 setTimeout(fitPreviewText, 310);
             });
 
-            // Логика слайдера-ограничителя
             safetySlider.addEventListener('input', (e) => {
                 const percent = e.target.value;
                 safetyLine.style.top = percent + '%';
@@ -441,7 +502,7 @@
 
         } else {
             // ==========================================
-            // ЛОГИКА ДЛЯ ТЕЛЕФОНА
+            // ЛОГИКА ДЛЯ ЧТЕНИЯ ТЕКСТА
             // ==========================================
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
@@ -449,14 +510,14 @@
             const phoneViewEl = document.getElementById('phone-view');
 
             const client = mqtt.connect(brokerUrl, {
-                clientId: 'phone_' + Math.random().toString(16).substr(2, 8),
+                clientId: 'receiver_' + Math.random().toString(16).substr(2, 8),
                 clean: true,
                 connectTimeout: 4000,
                 reconnectPeriod: 1000,
             });
 
             client.on('connect', () => {
-                phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
+                phoneStatusEl.innerText = "Подключено! Ожидание текста...";
                 client.subscribe(syncTopic, { qos: 1 });
             });
 
@@ -466,12 +527,11 @@
                     
                     if (text.trim() === "") {
                         phoneStatusEl.classList.remove('hidden');
-                        phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
+                        phoneStatusEl.innerText = "Подключено! Ожидание текста...";
                         liveTextEl.classList.add('hidden');
                     } else {
                         phoneStatusEl.classList.add('hidden');
                         liveTextEl.classList.remove('hidden');
-                        // Безопасное форматирование на мобильном
                         liveTextEl.innerText = preventTrailingSpaceWrap(text);
                         fitText();
                     }
