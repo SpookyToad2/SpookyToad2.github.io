@@ -65,7 +65,7 @@
             transition: background-color 0.2s;
         }
 
-        /* --- Интерфейс для ПК --- */
+        /* --- Интерфейс для ПК (и разрешенных телефонов) --- */
         #pc-view {
             display: flex;
             flex-direction: row;
@@ -254,7 +254,7 @@
             text-align: left;
         }
 
-        /* --- Интерфейс для телефона --- */
+        /* --- Интерфейс для телефона (только чтение) --- */
         #phone-view {
             display: flex;
             flex-direction: column;
@@ -285,7 +285,30 @@
             color: #000000;
         }
 
-        @media (max-height: 700px) {
+        /* Адаптация режима написания для экранов телефонов */
+        @media (max-width: 850px) {
+            #pc-view {
+                flex-direction: column;
+                justify-content: flex-start;
+                height: auto;
+                gap: 20px;
+                padding-bottom: 70px;
+                overflow-y: auto;
+            }
+            .pc-control-panel, .pc-preview-panel {
+                width: 100%;
+                min-width: unset;
+                box-sizing: border-box;
+            }
+            textarea {
+                height: 180px;
+            }
+            body, html {
+                overflow-y: auto; /* Возвращаем прокрутку, если открыто на телефоне в режиме редактирования */
+            }
+        }
+
+        @media (max-height: 700px) and (min-width: 851px) {
             #pc-view { gap: 20px; }
             textarea { height: 250px; }
             #preview-screen { height: 380px; }
@@ -301,7 +324,7 @@
         <span class="copy-btn-badge" id="copy-badge">Скопировать 📋</span>
     </div>
 
-    <!-- ИНТЕРФЕЙС ДЛЯ ПК -->
+    <!-- ИНТЕРФЕЙС ДЛЯ НАПИСАНИЯ ТЕКСТА (ПК + Разрешенные телефоны) -->
     <div id="pc-view" class="hidden">
         
         <div class="pc-control-panel">
@@ -341,7 +364,7 @@
 
     </div>
 
-    <!-- ИНТЕРФЕЙС ДЛЯ ТЕЛЕФОНА -->
+    <!-- ИНТЕРФЕЙС ДЛЯ ЧТЕНИЯ (Остальные телефоны) -->
     <div id="phone-view" class="hidden">
         <div id="phone-status">Подключение к сети...</div>
         <span id="live-text" class="hidden"></span>
@@ -352,7 +375,7 @@
         // НАСТРОЙКА ФИЛЬТРА УСТРОЙСТВА
         // ==========================================
         // Массив с уникальными признаками разрешенных телефонов.
-        // Режим отображения текста на телефоне включится ТОЛЬКО для них.
+        // ТОЛЬКО ЭТИ УСТРОЙСТВА И ПК СМОГУТ ПИСАТЬ ТЕКСТ.
         const TARGET_DEVICES = [
             "Linux; arm_64; Android 13; 23122PCD1G | 407x904 (DPR: 3) | Adreno (TM) 710",
             "iPhone; CPU iPhone OS 17_5_1 like Mac OS X | 430x932 (DPR: 3) | Apple GPU"
@@ -427,15 +450,20 @@
             callback();
         }
 
-        // Определяем ориентацию/тип устройства
+        // Определяем, является ли устройство мобильным (по умолчанию все мобильные - это получатели)
         const isMobileStandard = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
         
-        // Логика переключения интерфейса (Только эти 2 устройства)
-        let isPhoneMode = false;
+        // Логика переключения режимов
+        // isReceiverMode = true -> Только чтение
+        // isReceiverMode = false -> Можно писать текст (Открывается интерфейс как на ПК)
+        let isReceiverMode = isMobileStandard; // Изначально все телефоны только читают
+        
         if (TARGET_DEVICES.length > 0) {
-            isPhoneMode = TARGET_DEVICES.some(model => deviceInfo.fullString.toLowerCase().includes(model.toLowerCase()));
-        } else {
-            isPhoneMode = isMobileStandard;
+            // Проверяем, совпадает ли сигнатура телефона с разрешенными
+            const isTarget = TARGET_DEVICES.some(model => deviceInfo.fullString.toLowerCase().includes(model.toLowerCase()));
+            if (isTarget) {
+                isReceiverMode = false; // РАЗРЕШАЕМ ПИСАТЬ (переводим телефон в режим ПК)
+            }
         }
 
         const cleanUrl = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '-');
@@ -446,9 +474,9 @@
             return text.replace(/ +$/gm, match => '\u00A0'.repeat(match.length));
         }
 
-        if (!isPhoneMode) {
+        if (!isReceiverMode) {
             // ==========================================
-            // ЛОГИКА ДЛЯ ПК (ИЛИ НЕЦЕЛЕВЫХ УСТРОЙСТВ)
+            // ЛОГИКА ДЛЯ НАПИСАНИЯ ТЕКСТА (ПК и Разрешенные телефоны)
             // ==========================================
             document.getElementById('pc-view').classList.remove('hidden');
             const textarea = document.getElementById('text-input');
@@ -463,7 +491,7 @@
             const sliderVal = document.getElementById('slider-val');
 
             const client = mqtt.connect(brokerUrl, {
-                clientId: 'pc_' + Math.random().toString(16).substr(2, 8),
+                clientId: 'sender_' + Math.random().toString(16).substr(2, 8),
                 clean: true,
                 connectTimeout: 4000,
                 reconnectPeriod: 1000,
@@ -568,7 +596,7 @@
 
         } else {
             // ==========================================
-            // ЛОГИКА ДЛЯ ЦЕЛЕВОГО ТЕЛЕФОНА
+            // ЛОГИКА ДЛЯ ЧТЕНИЯ ТЕКСТА (Остальные телефоны)
             // ==========================================
             document.getElementById('phone-view').classList.remove('hidden');
             const liveTextEl = document.getElementById('live-text');
@@ -576,14 +604,14 @@
             const phoneViewEl = document.getElementById('phone-view');
 
             const client = mqtt.connect(brokerUrl, {
-                clientId: 'phone_' + Math.random().toString(16).substr(2, 8),
+                clientId: 'receiver_' + Math.random().toString(16).substr(2, 8),
                 clean: true,
                 connectTimeout: 4000,
                 reconnectPeriod: 1000,
             });
 
             client.on('connect', () => {
-                phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
+                phoneStatusEl.innerText = "Подключено! Ожидание текста...";
                 client.subscribe(syncTopic, { qos: 1 });
             });
 
@@ -593,7 +621,7 @@
                     
                     if (text.trim() === "") {
                         phoneStatusEl.classList.remove('hidden');
-                        phoneStatusEl.innerText = "Подключено! Пишите на ПК.";
+                        phoneStatusEl.innerText = "Подключено! Ожидание текста...";
                         liveTextEl.classList.add('hidden');
                     } else {
                         phoneStatusEl.classList.add('hidden');
