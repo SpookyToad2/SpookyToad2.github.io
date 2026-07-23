@@ -20,34 +20,6 @@
 
         .hidden { display: none !important; }
 
-        /* --- Информационная плашка модели устройства --- */
-        #device-info-bar {
-            position: fixed;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(242, 242, 247, 0.95);
-            border: 1px solid #d1d1d6;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #3a3a3c;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            white-space: nowrap;
-            max-width: 92%;
-            display: flex;
-            align-items: center;
-        }
-        #device-info-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        #device-info-bar strong {
-            color: #007aff;
-        }
-
         /* --- Интерфейс для ПК (и разрешенных телефонов) --- */
         #pc-view {
             display: flex;
@@ -301,11 +273,6 @@
 </head>
 <body>
 
-    <!-- ПЛАШКА С ИНФОРМАЦИЕЙ ОБ УСТРОЙСТВЕ -->
-    <div id="device-info-bar">
-        <span id="device-info-text">Признак устройства: <strong id="device-signature">Определение...</strong></span>
-    </div>
-
     <!-- ИНТЕРФЕЙС ДЛЯ НАПИСАНИЯ ТЕКСТА (ПК + Разрешенные телефоны) -->
     <div id="pc-view" class="hidden">
         
@@ -361,7 +328,7 @@
             "iPhone; CPU iPhone OS 17_5_1 like Mac OS X | 430x932 (DPR: 3) | Apple GPU"
         ]; 
 
-        // Функция сбора параметров устройства
+        // Функция сбора параметров устройства (для скрытой проверки)
         function getDeviceInfo() {
             const ua = navigator.userAgent;
             const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio || 1})`;
@@ -384,18 +351,10 @@
                 }
             } catch(e) {}
 
-            const fullString = `${osAndModel} | ${screenRes}${gpu ? ' | ' + gpu : ''}`;
-            return {
-                ua,
-                osAndModel,
-                screenRes,
-                gpu,
-                fullString
-            };
+            return `${osAndModel} | ${screenRes}${gpu ? ' | ' + gpu : ''}`;
         }
 
-        const deviceInfo = getDeviceInfo();
-        document.getElementById('device-signature').innerText = deviceInfo.fullString;
+        const deviceString = getDeviceInfo();
 
         // Определяем, является ли устройство мобильным
         const isMobileStandard = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -404,7 +363,7 @@
         
         if (TARGET_DEVICES.length > 0) {
             // Проверяем, совпадает ли сигнатура телефона с разрешенными
-            const isTarget = TARGET_DEVICES.some(model => deviceInfo.fullString.toLowerCase().includes(model.toLowerCase()));
+            const isTarget = TARGET_DEVICES.some(model => deviceString.toLowerCase().includes(model.toLowerCase()));
             if (isTarget) {
                 isReceiverMode = false; // РАЗРЕШАЕМ ПИСАТЬ (переводим телефон в режим ПК)
             }
