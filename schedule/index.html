@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Schedule — Координатор встреч РГУПС</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <span class="brand-logo">РГУПС</span>
+        <div>
+          <h1 class="brand-title">Match Schedule</h1>
+          <div class="brand-subtitle" id="header-today-label">Суббота, 3 октября</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Week Badge & Switch -->
+        <button class="header-control week-pill-btn" id="week-toggle-btn" title="Нажмите, чтобы сменить черту">
+          <span id="week-badge-text">ПОД ЧЕРТОЙ</span>
+          <span class="control-arrow">⇄</span>
+        </button>
+
+        <!-- Live Clock -->
+        <div class="header-control clock-chip" id="clock-chip" title="Текущее время">
+          <span id="live-clock">--:--</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="header-control theme-toggle-btn" id="theme-toggle-btn">Светлая тема</button>
+      </div>
+    </header>
+
+    <!-- DAY SELECTOR -->
+    <nav class="day-selector-bar" id="day-selector-bar" aria-label="Выбор дня недели">
+      <!-- Generated via JS -->
+    </nav>
+
+    <!-- SECTION: ВСТРЕЧИ В ЭТОТ ДЕНЬ -->
+    <section class="spotlight-section">
+      <div class="section-title-row">
+        <h2 class="section-heading" id="meetups-heading">Встречи сегодня</h2>
+        <span class="count-badge" id="meetups-count-badge">0 окон</span>
+      </div>
+
+      <div class="meetup-cards-grid" id="meetup-cards-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION: ГДЕ КТО СЕГОДНЯ -->
+    <section class="presence-section">
+      <div class="section-title-row">
+        <h2 class="section-heading" id="presence-heading">Где кто сегодня</h2>
+        <span class="count-badge">Статус</span>
+      </div>
+
+      <div class="people-presence-grid" id="people-presence-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- COLLAPSIBLE: СКРЫТО ПО УМОЛЧАНИЮ -->
+    <section class="collapsible-box">
+      <button class="collapse-toggle-btn" id="collapse-toggle-btn">
+        <span id="collapse-btn-text">Показать таймлайн и полное расписание пар</span>
+        <span id="collapse-arrow">[+]</span>
+      </button>
+
+      <div class="collapsible-body" id="collapsible-content" style="display: none;">
+        <!-- Visual Timeline Canvas -->
+        <div class="timeline-visual-area" id="timeline-visual-area">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Detailed Timetable Grid -->
+        <div class="timetables-grid" id="timetables-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div>Match Schedule • Юра, Вова и Наташа, Андрей, Артур • РГУПС</div>
+    </footer>
+
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
