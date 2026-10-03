@@ -3,157 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Match Schedule — Расписание пар и поиск встреч РГУПС</title>
-  <meta name="description" content="Интерактивный координатор встреч между парами для студентов: авто-трекер Над/Под чертой, таймлайн занятости и поиск окон для встреч.">
+  <title>Match Schedule — Встречи между парами РГУПС</title>
+  <meta name="description" content="Удобный координатор встреч между парами для студентов РГУПС: кто свободен сегодня, большой перерыв и пересменка.">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div class="container">
     
-    <!-- APP HEADER -->
-    <header class="app-header" id="main-header">
+    <!-- COMPACT MODERN HEADER -->
+    <header class="app-header">
       <div class="brand-wrapper">
         <div class="brand-logo">🎓</div>
-        <div class="brand-info">
-          <h1>Match Schedule</h1>
-          <p>Координатор встреч между парами • РГУПС</p>
+        <div>
+          <h1 class="brand-title">Match Schedule</h1>
+          <p class="brand-subtitle" id="header-today-label">Суббота, 3 октября</p>
         </div>
       </div>
 
-      <div class="header-controls">
-        <div class="live-clock-badge" id="live-clock-badge" title="Текущее время">
-          <span class="live-dot"></span>
-          <span id="live-clock-text">--:--:--</span>
+      <div class="header-right">
+        <!-- Week Badge & Toggle -->
+        <button class="week-pill-btn" id="week-toggle-btn" title="Нажмите, чтобы переключить черту">
+          <span class="week-indicator-dot"></span>
+          <span id="week-badge-text">ПОД ЧЕРТОЙ</span>
+          <span class="week-switch-icon">⇄</span>
+        </button>
+
+        <!-- Live Clock -->
+        <div class="clock-chip" id="clock-chip">
+          <span class="clock-pulse"></span>
+          <span id="live-clock">--:--</span>
         </div>
-        <button class="btn-icon" id="theme-toggle-btn" title="Переключить тему (светлая/тёмная)">☀️</button>
+
+        <!-- Theme Toggle -->
+        <button class="icon-btn" id="theme-toggle-btn" title="Сменить тему">☀️</button>
       </div>
     </header>
 
-    <!-- WEEK PARITY BANNER -->
-    <section class="week-banner" id="week-parity-banner">
-      <div class="parity-status-group">
-        <div class="parity-badge below" id="parity-badge">ПОД ЧЕРТОЙ</div>
-        <div class="parity-text">
-          <h2 id="parity-title">Сейчас неделя «ПОД ЧЕРТОЙ» (чётная)</h2>
-          <p id="parity-desc">Автоматическое определение по текущей дате</p>
-        </div>
-      </div>
-
-      <div class="cycle-info">
-        <div class="cycle-countdown" id="parity-countdown">
-          Смена в ночь на понедельник: <strong>загрузка...</strong>
-        </div>
-        <button class="parity-toggle-btn" id="parity-toggle-btn" title="Переключить черту для просмотра расписания">
-          ⇄ Сменить черту
-        </button>
-        <button class="btn-icon" id="parity-reset-btn" title="Вернуть авто-определение по дате">↺</button>
-      </div>
-    </section>
-
-    <!-- DAYS OF WEEK BAR -->
-    <nav class="days-bar" id="days-bar" aria-label="Дни недели">
-      <!-- Generated via JS -->
+    <!-- CLEAN DAY SELECTOR -->
+    <nav class="day-selector-bar" id="day-selector-bar">
+      <!-- Generated via JS: Пн, Вт, Ср, Чт, Пт, Сб, Вс -->
     </nav>
 
-    <!-- TIME SIMULATOR CONTROLS -->
-    <div class="sim-drawer" id="simulator-drawer">
-      <div class="sim-title">
-        <span>⏱ Быстрый просмотр времени:</span>
-      </div>
-      <div class="sim-controls">
-        <button class="sim-btn active" data-time="live">● Реальное время</button>
-        <button class="sim-btn" data-time="11:35">🍱 11:35 (Большой перерыв)</button>
-        <button class="sim-btn" data-time="13:40">☕ 13:40 (Окно 25 мин)</button>
-        <button class="sim-btn" data-time="17:15">🔄 17:15 (Пересменка)</button>
-        <button class="sim-btn" data-time="19:00">🌙 19:00 (Вечерники на парах)</button>
-      </div>
-    </div>
-
-    <!-- LIVE STATUS SECTION (КТО СЕЙЧАС ГДЕ) -->
-    <section class="live-status-section" id="live-status-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="icon">📍</span>
-          <span>Статус участников прямо сейчас</span>
-        </h2>
-        <span style="font-size: 0.8rem; color: var(--text-dim);">Отслеживание нахождения в университете</span>
-      </div>
-      <div class="people-status-grid" id="people-status-grid">
-        <!-- Rendered via JS -->
-      </div>
-    </section>
-
-    <!-- MEETUP OPPORTUNITY FINDER -->
-    <section class="meetup-section" id="meetup-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="icon">⚡</span>
-          <span>Окна для встреч в этот день</span>
-        </h2>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="sim-btn" id="btn-filter-all">Все вместе</button>
-          <button class="sim-btn" id="btn-filter-vona">YU + VO&NA (вечер)</button>
-          <button class="sim-btn" id="btn-filter-daytime">YU + AN + AR (день)</button>
+    <!-- MAIN SPOTLIGHT: КТО МОЖЕТ ВСТРЕТИТЬСЯ СЕГОДНЯ -->
+    <main>
+      <section class="spotlight-section">
+        <div class="section-title-row">
+          <div class="title-with-badge">
+            <span class="emoji-icon">🤝</span>
+            <div>
+              <h2 class="section-heading" id="meetups-heading">Встречи сегодня</h2>
+              <p class="section-caption" id="meetups-subheading">Окна, пересменки и большой перерыв</p>
+            </div>
+          </div>
+          <span class="count-badge" id="meetups-count-badge">0 встреч</span>
         </div>
-      </div>
 
-      <div class="meetup-filter-bar">
-        <div class="friends-selector">
-          <span class="selector-label">С кем искать пересечение:</span>
-          <div id="friends-selector" style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <!-- Rendered via JS -->
+        <!-- MEETUP CARDS CONTAINER -->
+        <div class="meetup-cards-grid" id="meetup-cards-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- WHO IS WHERE TODAY (КТО ГДЕ СЕГОДНЯ) -->
+      <section class="presence-section">
+        <div class="section-title-row">
+          <div class="title-with-badge">
+            <span class="emoji-icon">📍</span>
+            <div>
+              <h2 class="section-heading" id="presence-heading">Кто где сегодня</h2>
+              <p class="section-caption">Присутствие в университете и текущие пары</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="meetup-cards-container" id="meetup-cards-container">
-        <!-- Rendered via JS -->
-      </div>
-    </section>
-
-    <!-- INTERACTIVE TIMELINE -->
-    <section class="timeline-section" id="timeline-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="icon">📊</span>
-          <span>Таймлайн занятости (08:00 — 22:00)</span>
-        </h2>
-        <div style="display: flex; align-items: center; gap: 14px; font-size: 0.78rem; color: var(--text-muted);">
-          <span>🍱 11:30-12:00 (Обед)</span>
-          <span>🔄 17:10-17:20 (Пересменка)</span>
+        <div class="people-presence-grid" id="people-presence-grid">
+          <!-- Rendered via JS -->
         </div>
-      </div>
+      </section>
 
-      <div class="timeline-wrapper">
-        <div class="timeline-header-hours" id="timeline-header-hours">
-          <!-- Hours rendered via JS -->
+      <!-- COLLAPSIBLE: ПОЛНЫЙ ТАЙМЛАЙН И РАСПИСАНИЕ -->
+      <section class="collapsible-section">
+        <button class="collapse-toggle-btn" id="collapse-toggle-btn">
+          <span>📊 Показать полный таймлайн и расписание пар</span>
+          <span class="arrow-icon" id="collapse-arrow">▼</span>
+        </button>
+
+        <div class="collapsible-content" id="collapsible-content" style="display: none;">
+          <!-- Timeline View -->
+          <div class="timeline-box">
+            <div class="timeline-legend">
+              <span>🍱 11:30 - 12:00 (Большой перерыв)</span>
+              <span>🔄 17:10 - 17:20 (Пересменка)</span>
+            </div>
+            <div class="timeline-wrapper">
+              <div class="timeline-hours" id="timeline-hours"></div>
+              <div class="timeline-tracks" id="timeline-tracks"></div>
+            </div>
+          </div>
+
+          <!-- Timetable Details Grid -->
+          <div class="timetables-grid" id="timetables-grid"></div>
         </div>
-        <div id="timeline-tracks">
-          <!-- Tracks rendered via JS -->
-        </div>
-      </div>
-    </section>
+      </section>
+    </main>
 
-    <!-- DETAILED TIMETABLES PER PERSON -->
-    <section class="timetables-section" id="timetables-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="icon">📋</span>
-          <span>Подробное расписание на выбранный день</span>
-        </h2>
-      </div>
-
-      <div class="tables-grid" id="tables-grid">
-        <!-- Rendered via JS -->
-      </div>
-    </section>
-
-    <!-- FOOTER -->
+    <!-- SIMPLE FOOTER -->
     <footer class="app-footer">
-      <p>Match Schedule • Расписание групп YU, VO & NA, AN, AR • Создано для публикации на GitHub Pages</p>
-      <p style="margin-top: 6px; font-size: 0.75rem; color: var(--text-dim);">
-        Недели: чередование каждое воскресенье в 23:59:59. Звонки: 1 п. (08:15), 2 п. (10:00), 3 п. (12:00), 4 п. (13:55), 5 п. (15:40), 6 п. (17:20), 7 п. (18:55), 8 п. (20:30).
-      </p>
+      <p>Match Schedule • РГУПС • Неделя переключается в полночь на понедельник</p>
     </footer>
 
   </div>
