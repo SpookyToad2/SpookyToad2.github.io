@@ -173,8 +173,6 @@ export const SCHEDULE_DB = {
       { pair: 1, parity: 'both', subject: 'Военная подготовка', type: 'ВУЦ', teacher: 'Военная кафедра', room: 'ВУЦ' },
       { pair: 2, parity: 'both', subject: 'Военная подготовка', type: 'ВУЦ', teacher: 'Военная кафедра', room: 'ВУЦ' },
       { pair: 3, parity: 'both', subject: 'Военная подготовка', type: 'ВУЦ', teacher: 'Военная кафедра', room: 'ВУЦ' },
-      { pair: 4, parity: 'both', subject: 'Военная подготовка', type: 'ВУЦ', teacher: 'Военная кафедра', room: 'ВУЦ' },
-      { pair: 5, parity: 'both', subject: 'Военная подготовка', type: 'ВУЦ', teacher: 'Военная кафедра', room: 'ВУЦ' },
     ],
     5: [ // Пт
       { pair: 1, parity: 'both', subject: 'Организация производства средств механизации', type: 'ЛЕК', teacher: 'Зиновьева Ю.С.', room: 'Д301' },

@@ -3,113 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Match Schedule — Встречи между парами РГУПС</title>
-  <meta name="description" content="Удобный координатор встреч между парами для студентов РГУПС: кто свободен сегодня, большой перерыв и пересменка.">
+  <title>Match Schedule — Координатор встреч РГУПС</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div class="container">
     
-    <!-- COMPACT MODERN HEADER -->
+    <!-- HEADER -->
     <header class="app-header">
       <div class="brand-wrapper">
-        <div class="brand-logo">🎓</div>
+        <span class="brand-logo">РГУПС</span>
         <div>
           <h1 class="brand-title">Match Schedule</h1>
-          <p class="brand-subtitle" id="header-today-label">Суббота, 3 октября</p>
+          <div class="brand-subtitle" id="header-today-label">Суббота, 3 октября</div>
         </div>
       </div>
 
       <div class="header-right">
-        <!-- Week Badge & Toggle -->
-        <button class="week-pill-btn" id="week-toggle-btn" title="Нажмите, чтобы переключить черту">
-          <span class="week-indicator-dot"></span>
+        <!-- Week Badge & Switch -->
+        <button class="header-control week-pill-btn" id="week-toggle-btn" title="Нажмите, чтобы сменить черту">
           <span id="week-badge-text">ПОД ЧЕРТОЙ</span>
-          <span class="week-switch-icon">⇄</span>
+          <span class="control-arrow">⇄</span>
         </button>
 
         <!-- Live Clock -->
-        <div class="clock-chip" id="clock-chip">
-          <span class="clock-pulse"></span>
+        <div class="header-control clock-chip" id="clock-chip" title="Текущее время">
           <span id="live-clock">--:--</span>
         </div>
 
         <!-- Theme Toggle -->
-        <button class="icon-btn" id="theme-toggle-btn" title="Сменить тему">☀️</button>
+        <button class="header-control theme-toggle-btn" id="theme-toggle-btn">Светлая тема</button>
       </div>
     </header>
 
-    <!-- CLEAN DAY SELECTOR -->
-    <nav class="day-selector-bar" id="day-selector-bar">
-      <!-- Generated via JS: Пн, Вт, Ср, Чт, Пт, Сб, Вс -->
+    <!-- DAY SELECTOR -->
+    <nav class="day-selector-bar" id="day-selector-bar" aria-label="Выбор дня недели">
+      <!-- Generated via JS -->
     </nav>
 
-    <!-- MAIN SPOTLIGHT: КТО МОЖЕТ ВСТРЕТИТЬСЯ СЕГОДНЯ -->
-    <main>
-      <section class="spotlight-section">
-        <div class="section-title-row">
-          <div class="title-with-badge">
-            <span class="emoji-icon">🤝</span>
-            <div>
-              <h2 class="section-heading" id="meetups-heading">Встречи сегодня</h2>
-              <p class="section-caption" id="meetups-subheading">Окна, пересменки и большой перерыв</p>
-            </div>
-          </div>
-          <span class="count-badge" id="meetups-count-badge">0 встреч</span>
-        </div>
+    <!-- SECTION: ВСТРЕЧИ В ЭТОТ ДЕНЬ -->
+    <section class="spotlight-section">
+      <div class="section-title-row">
+        <h2 class="section-heading" id="meetups-heading">Встречи сегодня</h2>
+        <span class="count-badge" id="meetups-count-badge">0 окон</span>
+      </div>
 
-        <!-- MEETUP CARDS CONTAINER -->
-        <div class="meetup-cards-grid" id="meetup-cards-grid">
+      <div class="meetup-cards-grid" id="meetup-cards-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION: ГДЕ КТО СЕГОДНЯ -->
+    <section class="presence-section">
+      <div class="section-title-row">
+        <h2 class="section-heading" id="presence-heading">Где кто сегодня</h2>
+        <span class="count-badge">Статус</span>
+      </div>
+
+      <div class="people-presence-grid" id="people-presence-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- COLLAPSIBLE: СКРЫТО ПО УМОЛЧАНИЮ -->
+    <section class="collapsible-box">
+      <button class="collapse-toggle-btn" id="collapse-toggle-btn">
+        <span id="collapse-btn-text">Показать таймлайн и полное расписание пар</span>
+        <span id="collapse-arrow">[+]</span>
+      </button>
+
+      <div class="collapsible-body" id="collapsible-content" style="display: none;">
+        <!-- Visual Timeline Canvas -->
+        <div class="timeline-visual-area" id="timeline-visual-area">
           <!-- Rendered via JS -->
         </div>
-      </section>
 
-      <!-- WHO IS WHERE TODAY (КТО ГДЕ СЕГОДНЯ) -->
-      <section class="presence-section">
-        <div class="section-title-row">
-          <div class="title-with-badge">
-            <span class="emoji-icon">📍</span>
-            <div>
-              <h2 class="section-heading" id="presence-heading">Кто где сегодня</h2>
-              <p class="section-caption">Присутствие в университете и текущие пары</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="people-presence-grid" id="people-presence-grid">
+        <!-- Detailed Timetable Grid -->
+        <div class="timetables-grid" id="timetables-grid">
           <!-- Rendered via JS -->
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- COLLAPSIBLE: ПОЛНЫЙ ТАЙМЛАЙН И РАСПИСАНИЕ -->
-      <section class="collapsible-section">
-        <button class="collapse-toggle-btn" id="collapse-toggle-btn">
-          <span>📊 Показать полный таймлайн и расписание пар</span>
-          <span class="arrow-icon" id="collapse-arrow">▼</span>
-        </button>
-
-        <div class="collapsible-content" id="collapsible-content" style="display: none;">
-          <!-- Timeline View -->
-          <div class="timeline-box">
-            <div class="timeline-legend">
-              <span>🍱 11:30 - 12:00 (Большой перерыв)</span>
-              <span>🔄 17:10 - 17:20 (Пересменка)</span>
-            </div>
-            <div class="timeline-wrapper">
-              <div class="timeline-hours" id="timeline-hours"></div>
-              <div class="timeline-tracks" id="timeline-tracks"></div>
-            </div>
-          </div>
-
-          <!-- Timetable Details Grid -->
-          <div class="timetables-grid" id="timetables-grid"></div>
-        </div>
-      </section>
-    </main>
-
-    <!-- SIMPLE FOOTER -->
+    <!-- FOOTER -->
     <footer class="app-footer">
-      <p>Match Schedule • РГУПС • Неделя переключается в полночь на понедельник</p>
+      <div>Match Schedule • Юра, Вова и Наташа, Андрей, Артур • РГУПС</div>
     </footer>
 
   </div>
