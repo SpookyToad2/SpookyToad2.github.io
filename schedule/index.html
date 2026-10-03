@@ -1,33 +1,163 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Когда мы можем встретиться?</title>
-  <meta name="description" content="Общие окна для встреч: YU, VO & NA, AN, AR — с учётом Над/Под чертой." />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Schedule — Расписание пар и поиск встреч РГУПС</title>
+  <meta name="description" content="Интерактивный координатор встреч между парами для студентов: авто-трекер Над/Под чертой, таймлайн занятости и поиск окон для встреч.">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header class="top">
-    <h1>Когда мы можем встретиться?</h1>
-    <p class="sub">YU&nbsp;·&nbsp;VO&nbsp;&amp;&nbsp;NA&nbsp;·&nbsp;AN&nbsp;·&nbsp;AR — общие окна между парами и учёт «Над&nbsp;/&nbsp;Под&nbsp;чертой»</p>
-  </header>
+  <div class="container">
+    
+    <!-- APP HEADER -->
+    <header class="app-header" id="main-header">
+      <div class="brand-wrapper">
+        <div class="brand-logo">🎓</div>
+        <div class="brand-info">
+          <h1>Match Schedule</h1>
+          <p>Координатор встреч между парами • РГУПС</p>
+        </div>
+      </div>
 
-  <main>
-    <section class="banner" id="banner" aria-live="polite"></section>
-    <section class="next card" id="next"></section>
-    <section class="controls" id="controls"></section>
-    <section class="days" id="days"></section>
-    <section class="schedules" id="schedules"></section>
-  </main>
+      <div class="header-controls">
+        <div class="live-clock-badge" id="live-clock-badge" title="Текущее время">
+          <span class="live-dot"></span>
+          <span id="live-clock-text">--:--:--</span>
+        </div>
+        <button class="btn-icon" id="theme-toggle-btn" title="Переключить тему (светлая/тёмная)">☀️</button>
+      </div>
+    </header>
 
-  <footer class="foot">
-    <span id="legend"></span>
-    <span class="foot-note">Окно = время, когда <b>никто</b> не на паре. Главное окно — 11:30–12:00.</span>
-  </footer>
+    <!-- WEEK PARITY BANNER -->
+    <section class="week-banner" id="week-parity-banner">
+      <div class="parity-status-group">
+        <div class="parity-badge below" id="parity-badge">ПОД ЧЕРТОЙ</div>
+        <div class="parity-text">
+          <h2 id="parity-title">Сейчас неделя «ПОД ЧЕРТОЙ» (чётная)</h2>
+          <p id="parity-desc">Автоматическое определение по текущей дате</p>
+        </div>
+      </div>
 
-  <script src="data.js"></script>
-  <script src="logic.js"></script>
-  <script src="app.js"></script>
+      <div class="cycle-info">
+        <div class="cycle-countdown" id="parity-countdown">
+          Смена в ночь на понедельник: <strong>загрузка...</strong>
+        </div>
+        <button class="parity-toggle-btn" id="parity-toggle-btn" title="Переключить черту для просмотра расписания">
+          ⇄ Сменить черту
+        </button>
+        <button class="btn-icon" id="parity-reset-btn" title="Вернуть авто-определение по дате">↺</button>
+      </div>
+    </section>
+
+    <!-- DAYS OF WEEK BAR -->
+    <nav class="days-bar" id="days-bar" aria-label="Дни недели">
+      <!-- Generated via JS -->
+    </nav>
+
+    <!-- TIME SIMULATOR CONTROLS -->
+    <div class="sim-drawer" id="simulator-drawer">
+      <div class="sim-title">
+        <span>⏱ Быстрый просмотр времени:</span>
+      </div>
+      <div class="sim-controls">
+        <button class="sim-btn active" data-time="live">● Реальное время</button>
+        <button class="sim-btn" data-time="11:35">🍱 11:35 (Большой перерыв)</button>
+        <button class="sim-btn" data-time="13:40">☕ 13:40 (Окно 25 мин)</button>
+        <button class="sim-btn" data-time="17:15">🔄 17:15 (Пересменка)</button>
+        <button class="sim-btn" data-time="19:00">🌙 19:00 (Вечерники на парах)</button>
+      </div>
+    </div>
+
+    <!-- LIVE STATUS SECTION (КТО СЕЙЧАС ГДЕ) -->
+    <section class="live-status-section" id="live-status-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="icon">📍</span>
+          <span>Статус участников прямо сейчас</span>
+        </h2>
+        <span style="font-size: 0.8rem; color: var(--text-dim);">Отслеживание нахождения в университете</span>
+      </div>
+      <div class="people-status-grid" id="people-status-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- MEETUP OPPORTUNITY FINDER -->
+    <section class="meetup-section" id="meetup-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="icon">⚡</span>
+          <span>Окна для встреч в этот день</span>
+        </h2>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="sim-btn" id="btn-filter-all">Все вместе</button>
+          <button class="sim-btn" id="btn-filter-vona">YU + VO&NA (вечер)</button>
+          <button class="sim-btn" id="btn-filter-daytime">YU + AN + AR (день)</button>
+        </div>
+      </div>
+
+      <div class="meetup-filter-bar">
+        <div class="friends-selector">
+          <span class="selector-label">С кем искать пересечение:</span>
+          <div id="friends-selector" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="meetup-cards-container" id="meetup-cards-container">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- INTERACTIVE TIMELINE -->
+    <section class="timeline-section" id="timeline-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="icon">📊</span>
+          <span>Таймлайн занятости (08:00 — 22:00)</span>
+        </h2>
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 0.78rem; color: var(--text-muted);">
+          <span>🍱 11:30-12:00 (Обед)</span>
+          <span>🔄 17:10-17:20 (Пересменка)</span>
+        </div>
+      </div>
+
+      <div class="timeline-wrapper">
+        <div class="timeline-header-hours" id="timeline-header-hours">
+          <!-- Hours rendered via JS -->
+        </div>
+        <div id="timeline-tracks">
+          <!-- Tracks rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- DETAILED TIMETABLES PER PERSON -->
+    <section class="timetables-section" id="timetables-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="icon">📋</span>
+          <span>Подробное расписание на выбранный день</span>
+        </h2>
+      </div>
+
+      <div class="tables-grid" id="tables-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <p>Match Schedule • Расписание групп YU, VO & NA, AN, AR • Создано для публикации на GitHub Pages</p>
+      <p style="margin-top: 6px; font-size: 0.75rem; color: var(--text-dim);">
+        Недели: чередование каждое воскресенье в 23:59:59. Звонки: 1 п. (08:15), 2 п. (10:00), 3 п. (12:00), 4 п. (13:55), 5 п. (15:40), 6 п. (17:20), 7 п. (18:55), 8 п. (20:30).
+      </p>
+    </footer>
+
+  </div>
+
+  <script src="js/app.js"></script>
 </body>
 </html>
