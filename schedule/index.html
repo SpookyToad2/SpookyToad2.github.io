@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Когда мы можем встретиться?</title>
+  <meta name="description" content="Общие окна для встреч: YU, VO & NA, AN, AR — с учётом Над/Под чертой." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>Когда мы можем встретиться?</h1>
+    <p class="sub">YU&nbsp;·&nbsp;VO&nbsp;&amp;&nbsp;NA&nbsp;·&nbsp;AN&nbsp;·&nbsp;AR — общие окна между парами и учёт «Над&nbsp;/&nbsp;Под&nbsp;чертой»</p>
+  </header>
+
+  <main>
+    <section class="banner" id="banner" aria-live="polite"></section>
+    <section class="next card" id="next"></section>
+    <section class="controls" id="controls"></section>
+    <section class="days" id="days"></section>
+    <section class="schedules" id="schedules"></section>
+  </main>
+
+  <footer class="foot">
+    <span id="legend"></span>
+    <span class="foot-note">Окно = время, когда <b>никто</b> не на паре. Главное окно — 11:30–12:00.</span>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="logic.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
